@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Celeste.Mod.Vidcutter;
@@ -40,12 +41,37 @@ public class VidcutterModule : EverestModule {
         }
     }
 
-    private void OnComplete(On.Celeste.Level.orig_RegisterAreaComplete orig, Level self) {
+    public static List<LoggedString> getAllLogs(DateTime? startVideo = null, DateTime? endVideo = null) {
+        LogFileWriter.Close();
+        string[] lines = File.ReadAllLines(logPath);
+        List<LoggedString> parsedLines = new List<LoggedString>();
+        foreach (string line in lines) {
+            DateTime logTime = DateTime.Parse(line.Substring(1, 23));
+            bool condition = true;
+            if (startVideo != null) {
+                condition &= startVideo <= logTime;
+            }
+            if (endVideo != null) {
+                condition &= logTime <= endVideo;
+            }
+            if (condition) {
+                string[] loggedEvent = line.Substring(26).Split(" | ");
+                parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1]));
+            }
+        }
+
+        LogFileWriter = new StreamWriter(logPath, true) {
+            AutoFlush = true
+        };
+        return parsedLines;
+    }
+
+    public static void OnComplete(On.Celeste.Level.orig_RegisterAreaComplete orig, Level self) {
         Log("LEVEL COMPLETE", level: self);
         orig(self);
     }
 
-    private void OnTransition(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
+    public static void OnTransition(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
         if (playerIntro == Player.IntroTypes.Transition) {
             Log("ROOM PASSED", level: self);
         } else if (playerIntro == Player.IntroTypes.Respawn) {
@@ -54,12 +80,12 @@ public class VidcutterModule : EverestModule {
         orig(self, playerIntro, isFromLoader);
     }
 
-    private void OnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
+    public static void OnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
         Log("LEVEL LOADED", level: self);
         orig(self);
     }
 
-    private void OnScreenWipe(On.Celeste.Level.orig_DoScreenWipe orig, Level self, bool wipeIn, Action onComplete = null, bool hiresSnow = false) {
+    public static void OnScreenWipe(On.Celeste.Level.orig_DoScreenWipe orig, Level self, bool wipeIn, Action onComplete = null, bool hiresSnow = false) {
         if (onComplete != null && wipeIn) {
             Log("STATE", level: self);
         }

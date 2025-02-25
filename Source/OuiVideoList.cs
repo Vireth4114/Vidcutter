@@ -3,6 +3,7 @@ using System.Collections;
 using Celeste.Mod.Helpers;
 using Celeste.Mod.Vidcutter;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Media;
 using Monocle;
 using static Celeste.TextMenu;
 
@@ -27,15 +28,15 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
 
         menu = new TextMenu();
 
-        foreach (string video in VideoCreation.GetAllVideos()) {
+        VideoCreation vc = new VideoCreation(crf: VidcutterModuleSettings.CRF);
+
+        foreach (string video in vc.GetAllVideos()) {
             string videoName = video.Substring(video.LastIndexOf('\\') + 1);
             Button button = new Button(videoName) {
                 OnPressed = () => {
-                    VideoCreation.ProcessVideoInit(
-                        OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>(), 
-                        videoName,
-                        VidcutterModuleSettings.CRF
-                    );
+                    vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
+                    vc.videoName = videoName;
+                    vc.ProcessVideoInit();
                 }
             };
             menu.Add(button);

@@ -8,36 +8,27 @@ using Celeste.Mod.UI;
 namespace Celeste.Mod.Vidcutter;
 
 public class VideoCreation {
+    public int crf;
+    public string videoFolder;
+    public string videoName;
+    public OuiLoggedProgress progress;
+    public TimeSpan delayStart;
+    public TimeSpan delayEnd;
 
-    public static List<LoggedString> getAllLogs(DateTime? startVideo = null, DateTime? endVideo = null) {
-        VidcutterModule.LogFileWriter.Close();
-        string[] lines = File.ReadAllLines(VidcutterModule.logPath);
-        List<LoggedString> parsedLines = new List<LoggedString>();
-        foreach (string line in lines) {
-            DateTime logTime = DateTime.Parse(line.Substring(1, 23));
-            bool condition = true;
-            if (startVideo != null) {
-                condition &= startVideo <= logTime;
-            }
-            if (endVideo != null) {
-                condition &= logTime <= endVideo;
-            }
-            if (condition) {
-                string[] loggedEvent = line.Substring(26).Split(" | ");
-                parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1]));
-            }
-        }
+    public VideoCreation(OuiLoggedProgress progress = null, string videoName = null, int crf = 27) {
+        this.progress = progress;
+        this.crf = crf;
+        this.videoName = videoName;
 
-        VidcutterModule.LogFileWriter = new StreamWriter(VidcutterModule.logPath, true) {
-            AutoFlush = true
-        };
-        return parsedLines;
+        string UserProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        videoFolder = Path.Combine(UserProfile, "Videos");
+
+        delayStart = TimeSpan.FromSeconds(-0.8);
+        delayEnd = TimeSpan.FromSeconds(1.3);
     }
 
-    public static List<string> GetAllVideos() {
-        string UserProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        string videoFolder = Path.Combine(UserProfile, "Videos");
-        DateTime firstLog = getAllLogs()[0].Time;
+    public List<string> GetAllVideos() {
+        DateTime firstLog = VidcutterModule.getAllLogs()[0].Time;
         List<string> videos = new List<string>();
         foreach (string video in Directory.GetFiles(videoFolder)) {
             DateTime videoTime = File.GetCreationTime(video);
@@ -46,12 +37,6 @@ public class VideoCreation {
             }
         }
         return videos;
-    }
-
-    public static void ProcessVideoInit(OuiLoggedProgress progress, string videoName, int crf) {
-        progress.Init<OuiModOptions>("Creating video...", new Task(() => {
-            ProcessVideo(progress, videoName, crf);
-        }), 100);
     }
 
     public static Process createProcess(string arguments) {
@@ -66,13 +51,12 @@ public class VideoCreation {
         };
     }
 
-    public static void ProcessVideo(OuiLoggedProgress progress, string videoName, int crf) {
-        string UserProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        string videoFolder = Path.Combine(UserProfile, "Videos");
-        string video = Path.Combine(videoFolder, videoName);
+    public void ProcessVideoInit() {
+        progress.Init<OuiModOptions>("Creating video...", new Task(ProcessVideo), 100);
+    }
 
-        TimeSpan delayStart = TimeSpan.FromSeconds(-0.8);
-        TimeSpan delayEnd = TimeSpan.FromSeconds(1.3);
+    public void ProcessVideo() {
+        string video = Path.Combine(videoFolder, videoName);
 
         Process process = createProcess($"/C ffprobe -i \"{video}\" -show_entries format=duration -v quiet -of csv=\"p=0\"");
         process.Start();
@@ -83,30 +67,9 @@ public class VideoCreation {
         DateTime startVideo = File.GetCreationTime(video);
         DateTime endVideo = startVideo + duration;
 
-        List<LoggedString> parsedLines = getAllLogs(startVideo, endVideo);
-
-        List<LoggedString[]> processed = new List<LoggedString[]>();
-        LoggedString lastDeath = null;
-        for (int i = 1; i < parsedLines.Count - 1; i++) {
-            LoggedString previousLine = parsedLines[i - 1];
-            LoggedString currentLine = parsedLines[i];
-            LoggedString nextline = parsedLines[i + 1];
-            if (!new[] {"ROOM PASSED", "LEVEL COMPLETE"}.Contains(currentLine.Event))
-                continue;
-            if (previousLine.Event == "STATE")
-                continue;
-            
-            if (currentLine.Event == "LEVEL COMPLETE" || nextline.Event == "DEATH") {
-                if (lastDeath == null) {
-                    processed.Add([previousLine, currentLine]);
-                } else {
-                    processed.Add([lastDeath, currentLine]);
-                    lastDeath = null;
-                }
-            } else if (lastDeath == null) {
-                lastDeath = previousLine;
-            }
-        }
+        List<LoggedString> parsedLines = VidcutterModule.getAllLogs(startVideo, endVideo);
+        List<LoggedString[]> processed = ProcessLogs(parsedLines);
+        
         StreamWriter listVideos = new StreamWriter("./Vidcutter/videos.txt");
         int videoIdx = 1;
         foreach (LoggedString[] line in processed) {
@@ -144,5 +107,31 @@ public class VideoCreation {
         for (int i = 1; i < videoIdx; i++) {
             File.Delete($"./Vidcutter/{i}.mp4");
         }
+    }
+
+    public List<LoggedString[]> ProcessLogs(List<LoggedString> parsedLines) {
+        List<LoggedString[]> processed = new List<LoggedString[]>();
+        LoggedString lastDeath = null;
+        for (int i = 1; i < parsedLines.Count - 1; i++) {
+            LoggedString previousLine = parsedLines[i - 1];
+            LoggedString currentLine = parsedLines[i];
+            LoggedString nextline = parsedLines[i + 1];
+            if (!new[] {"ROOM PASSED", "LEVEL COMPLETE"}.Contains(currentLine.Event))
+                continue;
+            if (previousLine.Event == "STATE")
+                continue;
+            
+            if (currentLine.Event == "LEVEL COMPLETE" || nextline.Event == "DEATH") {
+                if (lastDeath == null) {
+                    processed.Add([previousLine, currentLine]);
+                } else {
+                    processed.Add([lastDeath, currentLine]);
+                    lastDeath = null;
+                }
+            } else if (lastDeath == null) {
+                lastDeath = previousLine;
+            }
+        }
+        return processed;
     }
 }
