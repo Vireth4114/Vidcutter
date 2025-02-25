@@ -48,9 +48,9 @@ public class VideoCreation {
         return videos;
     }
 
-    public static void ProcessVideoInit(OuiLoggedProgress progress, int crf) {
+    public static void ProcessVideoInit(OuiLoggedProgress progress, string videoName, int crf) {
         progress.Init<OuiModOptions>("Creating video...", new Task(() => {
-            ProcessVideo(progress, crf);
+            ProcessVideo(progress, videoName, crf);
         }), 100);
     }
 
@@ -66,13 +66,13 @@ public class VideoCreation {
         };
     }
 
-    public static void ProcessVideo(OuiLoggedProgress progress, int crf) {
-        string videoFolder = "C:/Users/rapha/Videos";
+    public static void ProcessVideo(OuiLoggedProgress progress, string videoName, int crf) {
+        string UserProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        string videoFolder = Path.Combine(UserProfile, "Videos");
+        string video = Path.Combine(videoFolder, videoName);
+
         TimeSpan delayStart = TimeSpan.FromSeconds(-0.8);
         TimeSpan delayEnd = TimeSpan.FromSeconds(1.3);
-
-        string[] files = Directory.GetFiles(videoFolder, "20*.mp4");
-        string video = files[files.Length - 1];
 
         Process process = createProcess($"/C ffprobe -i \"{video}\" -show_entries format=duration -v quiet -of csv=\"p=0\"");
         process.Start();
