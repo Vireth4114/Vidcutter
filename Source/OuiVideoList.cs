@@ -1,11 +1,17 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks.Dataflow;
 using Celeste.Mod.Helpers;
 using Celeste.Mod.Vidcutter;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Media;
 using Monocle;
 using static Celeste.TextMenu;
+using static Celeste.TextMenuExt;
 
 namespace Celeste.Mod.UI;
 
@@ -13,6 +19,8 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     private const float onScreenX = 960f;
     private const float offScreenX = 2880f;
     private float alpha = 0f;
+    private List<int> toProcess = new List<int>();
+    private List<string> rowInfos = new List<string>();
     
     private TextMenu menu;
 
@@ -27,19 +35,84 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         }
 
         menu = new TextMenu();
+        rowInfos.Clear();
+        toProcess.Clear();
 
         VideoCreation vc = new VideoCreation(crf: VidcutterModuleSettings.CRF);
-
+        int id = 0;
         foreach (string video in vc.GetAllVideos()) {
-            string videoName = video.Substring(video.LastIndexOf('\\') + 1);
-            Button button = new Button(videoName) {
+            List<string> levels = new List<string>();
+            List<LoggedString[]> listLogs = VideoCreation.ProcessLogs(video);
+            Dictionary<string, LoggedString> lastLogLevel = new Dictionary<string, LoggedString>();
+            foreach (LoggedString[] logs in listLogs) {
+                VidcutterModule.Log(logs[1].Level, true);
+                if (!levels.Contains(logs[1].Level)) {
+                    levels.Add(logs[1].Level);
+                }
+                lastLogLevel[logs[1].Level] = logs[1];
+            }
+            foreach (string level in levels) {
+                string whatHappened;
+                LoggedString lastLog = lastLogLevel[level];
+                if (lastLog.Event == "LEVEL COMPLETE") {
+                    whatHappened = "Cleared";
+                } else {
+                    whatHappened = $"Until room {lastLog.Room}";
+                }
+                string videoName = video.Substring(video.LastIndexOf('\\') + 1);
+                string rowName = $"{level} ({whatHappened})";
+                rowInfos.Add($"{videoName} | {level}");
+                int finalId = id;
+                CustomButton button = new CustomButton("", rowName) {
+                    OnPressed = () => {
+                        if (toProcess.Contains(finalId)) {
+                            toProcess.Remove(finalId);
+                        } else {
+                            toProcess.Add(finalId);
+                        }
+                        for (int i = 0; i < rowInfos.Count; i++) {
+                            int index = toProcess.IndexOf(i);
+                            foreach (Item item in menu.Items) {
+                                VidcutterModule.Log(item.ToString(), true);
+                            }
+                            VidcutterModule.Log(menu.Items[i*2].ToString(), true);
+                            CustomButton b = (CustomButton) menu.Items[i*2];
+                            if (index >= 0) {
+                                b.LabelIndex = $"{index + 1}.";
+                                b.Colored = true;
+                            } else {
+                                b.LabelIndex = "";
+                                b.Colored = false;
+                            }
+                        }
+                    },
+                };
+                menu.Add(button);
+                CustomEaseIn videoLabel = new CustomEaseIn(videoName, false, menu) {
+                    TextColor = Color.Gray,
+                    HeightExtra = 0f,
+                    FadeVisible = finalId == 0
+                };
+                menu.Add(videoLabel);
+
+                button.OnEnter += () => videoLabel.FadeVisible = true;
+                button.OnLeave += () => videoLabel.FadeVisible = false;
+                id++;
+            }
+        }
+        if (id == 0) {
+            menu.Add(new SubHeader("No videos to process"));
+        } else {
+            menu.Add(new Button("Process") {
                 OnPressed = () => {
                     vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
-                    vc.videoName = videoName;
-                    vc.ProcessVideoInit();
+                    foreach (int i in toProcess) {
+                        string[] splitted = rowInfos[i].Split(" | ");
+                        vc.videos.Add(new ProcessedVideo(splitted[0], splitted[1]));
+                    }
+                    vc.ProcessVideosProgress();
                 }
-            };
-            menu.Add(button);
+            });
         }
 
         if (selected >= 0) {
@@ -68,7 +141,6 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     }
 
     public override IEnumerator Leave(Oui next) {
-        VidcutterModule.Log("UwU", true);
         if (menu != null) {
             Audio.Play(SFX.ui_main_whoosh_large_out);
             menu.Focused = false;

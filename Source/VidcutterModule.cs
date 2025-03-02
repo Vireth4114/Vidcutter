@@ -1,6 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
+using System.Net.Http;
+using System.Threading;
+using Celeste.Mod.UI;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -29,9 +35,15 @@ public class VidcutterModule : EverestModule {
     public static void Log(string message, bool debug = false, Level level = null) {
         string toLog = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] ";
         if (level != null) {
-            string sid = level.Session.Area.GetSID();
-            string[] splitted = sid.Split('/');
-            toLog += $"{splitted[splitted.Length - 1]} | {level.Session.Level} | ";
+            string sid = level.Session.Area.SID;
+            if (sid.StartsWith("Celeste/")) {
+                sid = $"AREA_{sid.Substring(8, 1)}";
+            }
+            toLog += Dialog.Clean(sid);
+            if (level.Session.Area.Mode.ToString().EndsWith("Side")) {
+                toLog += $" [{level.Session.Area.Mode.ToString()[0]}-Side]";
+            }
+            toLog += $" | {level.Session.Level} | ";
         }
         toLog += message;
         if (debug) {
@@ -41,12 +53,23 @@ public class VidcutterModule : EverestModule {
         }
     }
 
-    public static List<LoggedString> getAllLogs(DateTime? startVideo = null, DateTime? endVideo = null) {
+    public static List<LoggedString> getAllLogs(string video, string level = null) {
+        DateTime startVideo = File.GetCreationTime(video);
+        TimeSpan? duration = VideoCreation.getVideoDuration(video);
+        if (duration == null) {
+            return new List<LoggedString>();
+        }
+        DateTime endVideo = startVideo + (TimeSpan)duration;
+        return getAllLogs(startVideo, endVideo, level);
+    }
+
+    public static List<LoggedString> getAllLogs(DateTime? startVideo = null, DateTime? endVideo = null, string level = null) {
         LogFileWriter.Close();
         string[] lines = File.ReadAllLines(logPath);
         List<LoggedString> parsedLines = new List<LoggedString>();
         foreach (string line in lines) {
             DateTime logTime = DateTime.Parse(line.Substring(1, 23));
+            string[] loggedEvent = line.Substring(26).Split(" | ");
             bool condition = true;
             if (startVideo != null) {
                 condition &= startVideo <= logTime;
@@ -54,8 +77,10 @@ public class VidcutterModule : EverestModule {
             if (endVideo != null) {
                 condition &= logTime <= endVideo;
             }
+            if (level != null) {
+                condition &= loggedEvent[0] == level;
+            }
             if (condition) {
-                string[] loggedEvent = line.Substring(26).Split(" | ");
                 parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1]));
             }
         }
@@ -90,6 +115,48 @@ public class VidcutterModule : EverestModule {
             Log("STATE", level: self);
         }
         orig(self, wipeIn, onComplete, hiresSnow);
+    }
+
+    public static bool InstallFFmpeg(OuiLoggedProgress progress) {
+        // Code mostly taken from psyGamer's TASRecorder because ffmpeg is a mess to work with
+        string DownloadURL = "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-7.1-essentials_build.zip";
+        string DownloadFolder = Path.Combine("./VidCutter/", "ffmpeg");
+        if (!Directory.Exists(DownloadFolder)) {
+            Directory.CreateDirectory(DownloadFolder);
+        }
+        string DownloadPath = Path.Combine(DownloadFolder, "ffmpeg.zip");
+        string InstallPath = Path.Combine("./VidCutter/", Path.Combine("ffmpeg", "ffmpeg"));
+        try {
+            Logger.Info("Vidcutter", $"Starting download of {DownloadURL}");
+            progress.LogLine("Downloading FFmpeg");
+            Everest.Updater.DownloadFileWithProgress(DownloadURL, DownloadPath, (position, length, speed) => {
+                        if (length > 0) {
+                            progress.Lines[progress.Lines.Count - 1] =
+                                $"Downloading FFmpeg {(int) Math.Floor(100D * (position / (double) length))}% @ {speed} KiB/s";
+                            progress.Progress = position;
+                        } else {
+                            progress.Lines[progress.Lines.Count - 1] =
+                                $"Downloading FFmpeg {(int) Math.Floor(position / 1000D)}KiB @ {speed} KiB/s";
+                        }
+
+                        progress.ProgressMax = (int) length;
+                        return true;
+                    });
+            if (!File.Exists(DownloadPath)) {
+                Logger.Error("Vidcutter", $"Download failed! The ZIP file went missing");
+                return false;
+            }
+
+            ZipFile.ExtractToDirectory(DownloadPath, InstallPath);
+
+            if (File.Exists(DownloadPath))
+                File.Delete(DownloadPath);
+
+            return true;
+        } catch (Exception ex) {
+            Logger.Error("Vidcutter", ex.StackTrace+" "+ex.Message);
+            return false;
+        }
     }
 
     public override void Load() {
