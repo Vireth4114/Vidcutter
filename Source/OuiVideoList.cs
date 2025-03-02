@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -19,7 +20,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     private const float onScreenX = 960f;
     private const float offScreenX = 2880f;
     private float alpha = 0f;
-    private List<int> toProcess = new List<int>();
+    private ObservableCollection<int> toProcess = new ObservableCollection<int>();
     private List<string> rowInfos = new List<string>();
     
     private TextMenu menu;
@@ -103,7 +104,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         if (id == 0) {
             menu.Add(new SubHeader("No videos to process"));
         } else {
-            menu.Add(new Button("Process") {
+            Button button = new Button("Process") {
                 OnPressed = () => {
                     vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
                     foreach (int i in toProcess) {
@@ -111,8 +112,13 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
                         vc.videos.Add(new ProcessedVideo(splitted[0], splitted[1]));
                     }
                     vc.ProcessVideosProgress();
-                }
-            });
+                },
+                Disabled = true
+            };
+            menu.Add(button);
+            toProcess.CollectionChanged += (sender, args) => {
+                button.Disabled = toProcess.Count == 0;
+            };
         }
 
         if (selected >= 0) {

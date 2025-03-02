@@ -113,7 +113,9 @@ public class VideoCreation {
     }
 
     public void ConcatAndClean(int videoCount) {
-        Process process = createProcess($"{VidcutterModuleSettings.FFmpegPath}ffmpeg", $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c copy -y ./Vidcutter/output.mp4");
+        Process process = createProcess($"{VidcutterModuleSettings.FFmpegPath}ffmpeg", 
+                                        $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c copy -y " + 
+                                        $"{VidcutterModuleSettings.VideoFolder}/Vidcutter_{videos[0].Level.Replace(" ", "")}.mp4");
         process.Start();
         process.WaitForExit();
 
