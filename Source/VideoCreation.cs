@@ -23,10 +23,10 @@ public class VideoCreation {
         }
         DateTime firstLog = logs[0].Time;
         List<string> videos = new List<string>();
-        if (!Directory.Exists(VidcutterModuleSettings.VideoFolder)) {
+        if (!Directory.Exists(VidcutterModule.Settings.VideoFolder)) {
             return videos;
         }
-        foreach (string video in Directory.GetFiles(VidcutterModuleSettings.VideoFolder)) {
+        foreach (string video in Directory.GetFiles(VidcutterModule.Settings.VideoFolder)) {
             DateTime videoTime = File.GetCreationTime(video);
             if (videoTime >= firstLog) {
                 videos.Add(video);
@@ -49,7 +49,7 @@ public class VideoCreation {
 
     public static TimeSpan? getVideoDuration(string video) {
         // This is slow, maybe segment display of videos to make it less visible ?
-        Process process = createProcess($"{VidcutterModuleSettings.FFmpegPath}ffprobe",  $"-i \"{video}\" -show_entries format=duration -v quiet -of csv=\"p=0\"");
+        Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffprobe",  $"-i \"{video}\" -show_entries format=duration -v quiet -of csv=\"p=0\"");
         process.Start();
         string strDuration = process.StandardOutput.ReadToEnd();
         process.WaitForExit();
@@ -73,7 +73,7 @@ public class VideoCreation {
 
     public int ProcessVideo(ProcessedVideo processedVideo, int startIdx = 1) {
         Process process;
-        string video = Path.Combine(VidcutterModuleSettings.VideoFolder, processedVideo.Video);
+        string video = Path.Combine(VidcutterModule.Settings.VideoFolder, processedVideo.Video);
         DateTime startVideo = File.GetCreationTime(video);
         TimeSpan? duration = getVideoDuration(video);
         if (duration == null) {
@@ -86,12 +86,12 @@ public class VideoCreation {
         int videoIdx = startIdx;
         foreach (LoggedString[] line in processed) {
             progress.Progress = 0;
-            TimeSpan startTime = line[0].Time + TimeSpan.FromSeconds(VidcutterModuleSettings.DelayStart) - startVideo;
-            TimeSpan endTime = line[1].Time + TimeSpan.FromSeconds(VidcutterModuleSettings.DelayEnd) - startVideo;
+            TimeSpan startTime = line[0].Time + TimeSpan.FromSeconds(VidcutterModule.Settings.DelayStart) - startVideo;
+            TimeSpan endTime = line[1].Time + TimeSpan.FromSeconds(VidcutterModule.Settings.DelayEnd) - startVideo;
             double clipDuration = (endTime - startTime).TotalSeconds;
             string ss = $"{startTime:hh\\:mm\\:ss\\.fff}";
             string to = $"{endTime:hh\\:mm\\:ss\\.fff}";
-            process = createProcess($"{VidcutterModuleSettings.FFmpegPath}ffmpeg", $"-ss {ss} -to {to} -i \"{video}\" -vcodec libx264 " +
+            process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", $"-ss {ss} -to {to} -i \"{video}\" -vcodec libx264 " +
                                     $"-crf {crf} -preset veryfast -y ./Vidcutter/{videoIdx}.mp4 -v warning -progress pipe:1");
             process.OutputDataReceived += (sender, e) => {
                 if (e.Data?.StartsWith("out_time=") ?? false) {
@@ -113,9 +113,9 @@ public class VideoCreation {
     }
 
     public void ConcatAndClean(int videoCount) {
-        Process process = createProcess($"{VidcutterModuleSettings.FFmpegPath}ffmpeg", 
+        Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", 
                                         $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c copy -y " + 
-                                        $"{VidcutterModuleSettings.VideoFolder}/Vidcutter_{videos[0].Level.Replace(" ", "")}.mp4");
+                                        $"{VidcutterModule.Settings.VideoFolder}/Vidcutter_{videos[0].Level.Replace(" ", "")}.mp4");
         process.Start();
         process.WaitForExit();
 
@@ -145,7 +145,6 @@ public class VideoCreation {
             } else {
                 nextline = parsedLines[i + 1];
             }
-            VidcutterModule.Log($"{previousLine.Event} | {currentLine.Event} | {nextline?.Event}", true);
             if (!new[] {"ROOM PASSED", "LEVEL COMPLETE"}.Contains(currentLine.Event))
                 continue;
             if (previousLine.Event == "STATE")

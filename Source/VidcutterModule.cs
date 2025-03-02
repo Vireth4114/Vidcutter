@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -7,6 +8,8 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Threading;
 using Celeste.Mod.UI;
+using Microsoft.Xna.Framework;
+using Monocle;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -32,18 +35,18 @@ public class VidcutterModule : EverestModule {
         Logger.SetLogLevel(nameof(VidcutterModule), LogLevel.Info);
     }
 
-    public static void Log(string message, bool debug = false, Level level = null) {
+    public static void Log(string message, bool debug = false, Session session = null) {
         string toLog = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] ";
-        if (level != null) {
-            string sid = level.Session.Area.SID;
+        if (session != null) {
+            string sid = session.Area.SID;
             if (sid.StartsWith("Celeste/")) {
                 sid = $"AREA_{sid.Substring(8, 1)}";
             }
             toLog += Dialog.Clean(sid);
-            if (level.Session.Area.Mode.ToString().EndsWith("Side")) {
-                toLog += $" [{level.Session.Area.Mode.ToString()[0]}-Side]";
+            if (session.Area.Mode.ToString().EndsWith("Side")) {
+                toLog += $" [{session.Area.Mode.ToString()[0]}-Side]";
             }
-            toLog += $" | {level.Session.Level} | ";
+            toLog += $" | {session.Level} | ";
         }
         toLog += message;
         if (debug) {
@@ -92,29 +95,56 @@ public class VidcutterModule : EverestModule {
     }
 
     public static void OnComplete(On.Celeste.Level.orig_RegisterAreaComplete orig, Level self) {
-        Log("LEVEL COMPLETE", level: self);
+        Log("LEVEL COMPLETE", session: self.Session);
         orig(self);
     }
 
     public static void OnTransition(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
         if (playerIntro == Player.IntroTypes.Transition) {
-            Log("ROOM PASSED", level: self);
+            Log("ROOM PASSED", session: self.Session);
         } else if (playerIntro == Player.IntroTypes.Respawn) {
-            Log("DEATH", level: self);
+            Log("DEATH", session: self.Session);
         }
         orig(self, playerIntro, isFromLoader);
     }
 
     public static void OnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
-        Log("LEVEL LOADED", level: self);
+        Log("LEVEL LOADED", session: self.Session);
         orig(self);
     }
 
     public static void OnScreenWipe(On.Celeste.Level.orig_DoScreenWipe orig, Level self, bool wipeIn, Action onComplete = null, bool hiresSnow = false) {
         if (onComplete != null && wipeIn) {
-            Log("STATE", level: self);
+            Log("STATE", session: self.Session);
         }
         orig(self, wipeIn, onComplete, hiresSnow);
+    }
+
+    public static void OnEnter(On.Celeste.ChangeRespawnTrigger.orig_OnEnter orig, ChangeRespawnTrigger self, Player player) {
+        Log("ROOM PASSED", session: player.SceneAs<Level>().Session);
+        orig(self, player);
+    }
+    
+    public static void OnFlag(On.Monocle.Entity.orig_Added orig, Entity self, Scene scene) {
+        orig(self, scene);
+        if (self is SummitCheckpoint.ConfettiRenderer confetti) {
+            Log("ROOM PASSED", session: confetti.SceneAs<Level>().Session);
+        }
+    }
+
+    public static void OnCollectStrawberry(On.Celeste.Strawberry.orig_OnCollect orig, Strawberry self) {
+        Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
+        orig(self);
+    }
+
+    public static IEnumerator OnCollectHeart(On.Celeste.HeartGem.orig_CollectRoutine orig, HeartGem self, Player player) {
+        yield return new SwapImmediately(orig(self, player));
+        Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
+    }
+
+    public static IEnumerator OnCollectCassette(On.Celeste.Cassette.orig_CollectRoutine orig, Cassette self, Player player) {
+        yield return new SwapImmediately(orig(self, player));
+        Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
     }
 
     public static bool InstallFFmpeg(OuiLoggedProgress progress) {
@@ -176,6 +206,11 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Level.Begin += OnBegin;
         On.Celeste.Level.LoadLevel += OnTransition;
         On.Celeste.Level.DoScreenWipe += OnScreenWipe;
+        On.Celeste.ChangeRespawnTrigger.OnEnter += OnEnter;
+        On.Monocle.Entity.Added += OnFlag;
+        On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
+        On.Celeste.HeartGem.CollectRoutine += OnCollectHeart;
+        On.Celeste.Cassette.CollectRoutine += OnCollectCassette;
     }
 
     public override void Unload() {
@@ -185,5 +220,10 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Level.Begin -= OnBegin;
         On.Celeste.Level.LoadLevel -= OnTransition;
         On.Celeste.Level.DoScreenWipe -= OnScreenWipe;
+        On.Celeste.ChangeRespawnTrigger.OnEnter -= OnEnter;
+        On.Monocle.Entity.Added -= OnFlag;
+        On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
+        On.Celeste.HeartGem.CollectRoutine -= OnCollectHeart;
+        On.Celeste.Cassette.CollectRoutine -= OnCollectCassette;
     }
 }

@@ -39,14 +39,13 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         rowInfos.Clear();
         toProcess.Clear();
 
-        VideoCreation vc = new VideoCreation(crf: VidcutterModuleSettings.CRF);
+        VideoCreation vc = new VideoCreation(crf: VidcutterModule.Settings.CRF);
         int id = 0;
         foreach (string video in vc.GetAllVideos()) {
             List<string> levels = new List<string>();
             List<LoggedString[]> listLogs = VideoCreation.ProcessLogs(video);
             Dictionary<string, LoggedString> lastLogLevel = new Dictionary<string, LoggedString>();
             foreach (LoggedString[] logs in listLogs) {
-                VidcutterModule.Log(logs[1].Level, true);
                 if (!levels.Contains(logs[1].Level)) {
                     levels.Add(logs[1].Level);
                 }
@@ -73,10 +72,6 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
                         }
                         for (int i = 0; i < rowInfos.Count; i++) {
                             int index = toProcess.IndexOf(i);
-                            foreach (Item item in menu.Items) {
-                                VidcutterModule.Log(item.ToString(), true);
-                            }
-                            VidcutterModule.Log(menu.Items[i*2].ToString(), true);
                             CustomButton b = (CustomButton) menu.Items[i*2];
                             if (index >= 0) {
                                 b.LabelIndex = $"{index + 1}.";
