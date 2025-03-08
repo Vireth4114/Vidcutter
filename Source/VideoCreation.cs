@@ -29,6 +29,7 @@ public class VideoCreation {
         string[] allVideos = Directory.GetFiles(VidcutterModule.Settings.VideoFolder);
         foreach (string video in allVideos) {
             DateTime videoTime = File.GetCreationTime(video);
+            videoTime += TimeSpan.FromHours(5); // Hacky stuff to not use ffprobe but still giving leeway
             if (videoTime >= firstLog) {
                 videos.Add(video);
             }
