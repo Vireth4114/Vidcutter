@@ -60,6 +60,7 @@ public class VidcutterModule : EverestModule {
     public static List<LoggedString> getAllLogs(string video, string level = null) {
         DateTime startVideo = File.GetCreationTime(video);
         TimeSpan? duration = VideoCreation.getVideoDuration(video);
+        Logger.Info("Vidcutter", $"Video {video} started at {startVideo} and has duration {duration}");
         if (duration == null) {
             return new List<LoggedString>();
         }
