@@ -86,7 +86,12 @@ public class VideoCreation {
         int videoIdx = startIdx;
         foreach (LoggedString[] line in processed) {
             progress.Progress = 0;
-            TimeSpan startTime = line[0].Time + TimeSpan.FromSeconds(VidcutterModule.Settings.DelayStart) - startVideo;
+            TimeSpan startTime;
+            if (line[0] == null) {
+                startTime = TimeSpan.Zero;
+            } else {
+                startTime =  line[0].Time + TimeSpan.FromSeconds(VidcutterModule.Settings.DelayStart) - startVideo;
+            }
             TimeSpan endTime = line[1].Time + TimeSpan.FromSeconds(VidcutterModule.Settings.DelayEnd) - startVideo;
             double clipDuration = (endTime - startTime).TotalSeconds;
             string ss = $"{startTime:hh\\:mm\\:ss\\.fff}";
@@ -136,8 +141,13 @@ public class VideoCreation {
     public static List<LoggedString[]> ProcessLogs(List<LoggedString> parsedLines) {
         List<LoggedString[]> processed = new List<LoggedString[]>();
         LoggedString lastDeath = null;
-        for (int i = 1; i < parsedLines.Count; i++) {
-            LoggedString previousLine = parsedLines[i - 1];
+        for (int i = 0; i < parsedLines.Count; i++) {
+            LoggedString previousLine;
+            if (i == 0) {
+                previousLine = null;
+            } else {
+                previousLine = parsedLines[i - 1];
+            }
             LoggedString currentLine = parsedLines[i];
             LoggedString nextline;
             if (i == parsedLines.Count - 1) {
@@ -147,7 +157,7 @@ public class VideoCreation {
             }
             if (!new[] {"ROOM PASSED", "LEVEL COMPLETE"}.Contains(currentLine.Event))
                 continue;
-            if (previousLine.Event == "STATE")
+            if (previousLine != null && previousLine.Event == "STATE")
                 continue;
             
             if (currentLine.Event == "LEVEL COMPLETE" || nextline == null || nextline.Event == "DEATH") {
