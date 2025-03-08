@@ -26,12 +26,14 @@ public class VideoCreation {
         if (!Directory.Exists(VidcutterModule.Settings.VideoFolder)) {
             return videos;
         }
-        foreach (string video in Directory.GetFiles(VidcutterModule.Settings.VideoFolder)) {
+        string[] allVideos = Directory.GetFiles(VidcutterModule.Settings.VideoFolder);
+        foreach (string video in allVideos) {
             DateTime videoTime = File.GetCreationTime(video);
             if (videoTime >= firstLog) {
                 videos.Add(video);
             }
         }
+        Logger.Info("Vidcutter", $"{videos.Count}/{allVideos.Count()} videos in {VidcutterModule.Settings.VideoFolder} are after start of log");
         return videos;
     }
 

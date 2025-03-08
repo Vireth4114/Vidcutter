@@ -51,6 +51,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
                 }
                 lastLogLevel[logs[1].Level] = logs[1];
             }
+            Logger.Info("Vidcutter", $"Video {video} has {levels.Count} levels and {listLogs.Count} clips");
             foreach (string level in levels) {
                 string whatHappened;
                 LoggedString lastLog = lastLogLevel[level];
