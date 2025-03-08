@@ -60,11 +60,11 @@ public class VideoCreation {
     }
 
     public void ProcessVideosProgress() {
-        progress.Init<OuiModOptions>("Creating video...", new Task(() => {
+        progress.Init<OuiModOptions>(Dialog.Clean("VIDCUTTER_PROCESS_TITLE"), new Task(() => {
             int idx = 1;
             int videoIdx = 1;
             foreach (ProcessedVideo video in videos) {
-                progress.LogLine($"Processing video {video.Video} ({videoIdx++}/{videos.Count})");
+                progress.LogLine(Dialog.Clean("VIDCUTTER_PROCESSINGVIDEO") + $" {video.Video} ({videoIdx++}/{videos.Count})");
                 idx = ProcessVideo(video, idx);
             }
             ConcatAndClean(idx);
@@ -101,7 +101,7 @@ public class VideoCreation {
                     }
                 }
             };
-            progress.LogLine($"- Processing clip {videoIdx - startIdx + 1}/{processed.Count}");
+            progress.LogLine("- " + Dialog.Clean("VIDCUTTER_PROCESSINGCLIP") + $" {videoIdx - startIdx + 1}/{processed.Count}");
             process.Start();
             process.BeginOutputReadLine();
             process.WaitForExit();

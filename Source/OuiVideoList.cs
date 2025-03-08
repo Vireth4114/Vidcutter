@@ -55,9 +55,9 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
                 string whatHappened;
                 LoggedString lastLog = lastLogLevel[level];
                 if (lastLog.Event == "LEVEL COMPLETE") {
-                    whatHappened = "Cleared";
+                    whatHappened = Dialog.Clean("VIDCUTTER_LEVEL_CLEARED");
                 } else {
-                    whatHappened = $"Until room {lastLog.Room}";
+                    whatHappened = Dialog.Clean("VIDCUTTER_LEVEL_UNTIL") + $" {lastLog.Room}";
                 }
                 string videoName = video.Substring(video.LastIndexOf('\\') + 1);
                 string rowName = $"{level} ({whatHappened})";
@@ -97,9 +97,9 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
             }
         }
         if (id == 0) {
-            menu.Add(new SubHeader("No videos to process"));
+            menu.Add(new SubHeader(Dialog.Clean("VIDCUTTER_NOVIDEO")));
         } else {
-            Button button = new Button("Process") {
+            Button button = new Button(Dialog.Clean("VIDCUTTER_PROCESS")) {
                 OnPressed = () => {
                     vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
                     foreach (int i in toProcess) {

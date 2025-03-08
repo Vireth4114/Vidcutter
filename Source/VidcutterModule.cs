@@ -43,6 +43,9 @@ public class VidcutterModule : EverestModule {
             string sid = session.Area.SID;
             if (sid.StartsWith("Celeste/")) {
                 sid = $"AREA_{sid.Substring(8, 1)}";
+                if (sid == "AREA_L") {
+                    sid = "AREA_10";
+                }
             }
             toLog += Dialog.Clean(sid);
             if (session.Area.Mode.ToString().EndsWith("Side")) {
