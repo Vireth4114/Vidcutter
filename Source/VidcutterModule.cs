@@ -37,7 +37,7 @@ public class VidcutterModule : EverestModule {
         Logger.SetLogLevel(nameof(VidcutterModule), LogLevel.Info);
     }
 
-    public static void Log(string message, bool debug = false, Session session = null) {
+    public static void Log(string message, Session session = null) {
         string toLog = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] ";
         if (session != null) {
             string sid = session.Area.SID;
@@ -54,11 +54,7 @@ public class VidcutterModule : EverestModule {
             toLog += $" | {session.Level} | ";
         }
         toLog += message;
-        if (debug) {
-            LogFileWriter2.WriteLine(toLog);
-        } else {
-            LogFileWriter.WriteLine(toLog);
-        }
+        LogFileWriter.WriteLine(toLog);
     }
 
     public static List<LoggedString> getAllLogs(string video, string level = null) {
@@ -167,7 +163,6 @@ public class VidcutterModule : EverestModule {
     }
 
     public static bool InstallFFmpeg(OuiLoggedProgress progress) {
-        // Code mostly taken from psyGamer's TASRecorder because ffmpeg is a mess to work with
         string DownloadURL = "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-7.1-essentials_build.zip";
         string DownloadFolder = Path.Combine("./VidCutter/", "ffmpeg");
         if (!Directory.Exists(DownloadFolder)) {
@@ -177,15 +172,15 @@ public class VidcutterModule : EverestModule {
         string InstallPath = Path.Combine("./VidCutter/", Path.Combine("ffmpeg", "ffmpeg"));
         try {
             Logger.Info("Vidcutter", $"Starting download of {DownloadURL}");
-            progress.LogLine("Downloading FFmpeg");
+            progress.LogLine(Dialog.Clean("VIDCUTTER_DOWNLOADINGFFMPEG"));
             Everest.Updater.DownloadFileWithProgress(DownloadURL, DownloadPath, (position, length, speed) => {
                         if (length > 0) {
                             progress.Lines[progress.Lines.Count - 1] =
-                                $"Downloading FFmpeg {(int) Math.Floor(100D * (position / (double) length))}% @ {speed} KiB/s";
+                                Dialog.Clean("VIDCUTTER_DOWNLOADINGFFMPEG") + $" {(int) Math.Floor(100D * (position / (double) length))}% @ {speed} KiB/s";
                             progress.Progress = position;
                         } else {
                             progress.Lines[progress.Lines.Count - 1] =
-                                $"Downloading FFmpeg {(int) Math.Floor(position / 1000D)}KiB @ {speed} KiB/s";
+                                Dialog.Clean("VIDCUTTER_DOWNLOADINGFFMPEG") + $" {(int) Math.Floor(position / 1000D)}KiB @ {speed} KiB/s";
                         }
 
                         progress.ProgressMax = (int) length;
@@ -216,9 +211,6 @@ public class VidcutterModule : EverestModule {
         logPath = Path.Combine("./VidCutter/", Path.Combine("logs", "log.txt"));
         logPath2 = Path.Combine("./VidCutter/", Path.Combine("logs", "log2.txt"));
         LogFileWriter = new StreamWriter(logPath, true) {
-            AutoFlush = true
-        };
-        LogFileWriter2 = new StreamWriter(logPath2, true) {
             AutoFlush = true
         };
         On.Celeste.Level.RegisterAreaComplete += OnComplete;
