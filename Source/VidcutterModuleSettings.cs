@@ -46,8 +46,12 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     public string FFmpegPath { get; set; } = "";
 
     [SettingIgnore]
+    [SettingInGame(false)]
     public bool VideoProcess { get; set; } = false;
     public void CreateVideoProcessEntry(TextMenu menu, bool inGame) {
+        if (inGame) {
+            return;
+        }
         menu.Add(new TextMenu.Button("Cut Video(s)") {
             OnPressed = () => {
             OuiLoggedProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
