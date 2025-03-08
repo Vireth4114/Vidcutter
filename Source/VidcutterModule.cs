@@ -30,6 +30,8 @@ public class VidcutterModule : EverestModule {
     public static string logPath2;
     public static StreamWriter LogFileWriter2 = null;
 
+    public static Vector2? previousRespawnTrigger = null;
+
     public VidcutterModule() {
         Instance = this;
         Logger.SetLogLevel(nameof(VidcutterModule), LogLevel.Info);
@@ -96,12 +98,14 @@ public class VidcutterModule : EverestModule {
 
     public static void OnComplete(On.Celeste.Level.orig_RegisterAreaComplete orig, Level self) {
         Log("LEVEL COMPLETE", session: self.Session);
+        previousRespawnTrigger = null;
         orig(self);
     }
 
     public static void OnTransition(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
         if (playerIntro == Player.IntroTypes.Transition) {
             Log("ROOM PASSED", session: self.Session);
+            previousRespawnTrigger = null;
         } else if (playerIntro == Player.IntroTypes.Respawn) {
             Log("DEATH", session: self.Session);
         }
@@ -121,15 +125,22 @@ public class VidcutterModule : EverestModule {
     }
 
     public static void OnEnter(On.Celeste.ChangeRespawnTrigger.orig_OnEnter orig, ChangeRespawnTrigger self, Player player) {
-        Log("ROOM PASSED", session: player.SceneAs<Level>().Session);
+        if (previousRespawnTrigger == null || previousRespawnTrigger != self.Center) {
+            Log("ROOM PASSED", session: player.SceneAs<Level>().Session);
+            previousRespawnTrigger = self.Center;
+        }
         orig(self, player);
     }
     
-    public static void OnFlag(On.Monocle.Entity.orig_Added orig, Entity self, Scene scene) {
-        orig(self, scene);
-        if (self is SummitCheckpoint.ConfettiRenderer confetti) {
-            Log("ROOM PASSED", session: confetti.SceneAs<Level>().Session);
+    public static void OnFlag(On.Celeste.SummitCheckpoint.orig_Update orig, SummitCheckpoint self) {
+        // IL Hook would be cleaner but On hooks are nice too heh
+        if (!self.Activated) {
+            Player player = self.CollideFirst<Player>();
+            if (player != null && player.OnGround() && player.Speed.Y >= 0f) {
+                Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
+            }
         }
+        orig(self);
     }
 
     public static void OnCollectStrawberry(On.Celeste.Strawberry.orig_OnCollect orig, Strawberry self) {
@@ -145,6 +156,11 @@ public class VidcutterModule : EverestModule {
     public static IEnumerator OnCollectCassette(On.Celeste.Cassette.orig_CollectRoutine orig, Cassette self, Player player) {
         yield return new SwapImmediately(orig(self, player));
         Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
+    }
+
+    public static void OnTeleport(On.Celeste.Level.orig_TeleportTo orig, Level self, Player player, string nextLevel, Player.IntroTypes introType, Vector2? nearestSpawn = null) {
+        Log("ROOM PASSED", session: self.Session);
+        orig(self, player, nextLevel, introType, nearestSpawn);
     }
 
     public static bool InstallFFmpeg(OuiLoggedProgress progress) {
@@ -206,8 +222,9 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Level.Begin += OnBegin;
         On.Celeste.Level.LoadLevel += OnTransition;
         On.Celeste.Level.DoScreenWipe += OnScreenWipe;
+        On.Celeste.Level.TeleportTo += OnTeleport;
         On.Celeste.ChangeRespawnTrigger.OnEnter += OnEnter;
-        On.Monocle.Entity.Added += OnFlag;
+        On.Celeste.SummitCheckpoint.Update += OnFlag;
         On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
         On.Celeste.HeartGem.CollectRoutine += OnCollectHeart;
         On.Celeste.Cassette.CollectRoutine += OnCollectCassette;
@@ -220,8 +237,9 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Level.Begin -= OnBegin;
         On.Celeste.Level.LoadLevel -= OnTransition;
         On.Celeste.Level.DoScreenWipe -= OnScreenWipe;
+        On.Celeste.Level.TeleportTo -= OnTeleport;
         On.Celeste.ChangeRespawnTrigger.OnEnter -= OnEnter;
-        On.Monocle.Entity.Added -= OnFlag;
+        On.Celeste.SummitCheckpoint.Update -= OnFlag;
         On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
         On.Celeste.HeartGem.CollectRoutine -= OnCollectHeart;
         On.Celeste.Cassette.CollectRoutine -= OnCollectCassette;
