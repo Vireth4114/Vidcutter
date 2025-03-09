@@ -27,10 +27,9 @@ public class VidcutterModule : EverestModule {
 
     public static string logPath;
     public static StreamWriter LogFileWriter = null;
-    public static string logPath2;
-    public static StreamWriter LogFileWriter2 = null;
 
     public static Vector2? previousRespawnTrigger = null;
+    public static bool processWhenClose = false;
 
     public VidcutterModule() {
         Instance = this;
@@ -98,6 +97,7 @@ public class VidcutterModule : EverestModule {
 
     public static void OnComplete(On.Celeste.Level.orig_RegisterAreaComplete orig, Level self) {
         Log("LEVEL COMPLETE", session: self.Session);
+        processWhenClose = false;
         previousRespawnTrigger = null;
         orig(self);
     }
@@ -106,8 +106,10 @@ public class VidcutterModule : EverestModule {
         if (playerIntro == Player.IntroTypes.Transition) {
             Log("ROOM PASSED", session: self.Session);
             previousRespawnTrigger = null;
+            processWhenClose = true;
         } else if (playerIntro == Player.IntroTypes.Respawn) {
             Log("DEATH", session: self.Session);
+            processWhenClose = false;
         }
         orig(self, playerIntro, isFromLoader);
     }
@@ -120,6 +122,7 @@ public class VidcutterModule : EverestModule {
     public static void OnScreenWipe(On.Celeste.Level.orig_DoScreenWipe orig, Level self, bool wipeIn, Action onComplete = null, bool hiresSnow = false) {
         if (onComplete != null && wipeIn) {
             Log("STATE", session: self.Session);
+            processWhenClose = false;
         }
         orig(self, wipeIn, onComplete, hiresSnow);
     }
@@ -156,6 +159,22 @@ public class VidcutterModule : EverestModule {
     public static void OnTeleport(On.Celeste.Level.orig_TeleportTo orig, Level self, Player player, string nextLevel, Player.IntroTypes introType, Vector2? nearestSpawn = null) {
         Log("ROOM PASSED", session: self.Session);
         orig(self, player, nextLevel, introType, nearestSpawn);
+    }
+
+    public static void onPlayerUpdate(On.Celeste.Player.orig_Update orig, Player self) {
+        orig(self);
+        Vector2 playerPos = self.Position;
+        Vector2? respawnPoint = self.SceneAs<Level>().Session.RespawnPoint;
+        if (respawnPoint == null) {
+            return;
+        }
+        float deltaY = Math.Abs(playerPos.Y - respawnPoint.Value.Y);
+        float deltaX = Math.Abs(playerPos.X - respawnPoint.Value.X);
+        double distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+        if (distance <= 50 & processWhenClose) {
+            Log($"ROOM PASSED", session: self.SceneAs<Level>().Session);
+            processWhenClose = false;
+        }
     }
 
     public static bool InstallFFmpeg(OuiLoggedProgress progress) {
@@ -205,7 +224,6 @@ public class VidcutterModule : EverestModule {
             Directory.CreateDirectory(logFolder);
         }
         logPath = Path.Combine("./VidCutter/", Path.Combine("logs", "log.txt"));
-        logPath2 = Path.Combine("./VidCutter/", Path.Combine("logs", "log2.txt"));
         LogFileWriter = new StreamWriter(logPath, true) {
             AutoFlush = true
         };
@@ -214,6 +232,7 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Level.LoadLevel += OnTransition;
         On.Celeste.Level.DoScreenWipe += OnScreenWipe;
         On.Celeste.Level.TeleportTo += OnTeleport;
+        On.Celeste.Player.Update += onPlayerUpdate;
         On.Celeste.ChangeRespawnTrigger.OnEnter += OnEnter;
         On.Celeste.SummitCheckpoint.Update += OnFlag;
         On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
@@ -222,12 +241,12 @@ public class VidcutterModule : EverestModule {
 
     public override void Unload() {
         LogFileWriter.Close();
-        LogFileWriter2.Close();
         On.Celeste.Level.RegisterAreaComplete -= OnComplete;
         On.Celeste.Level.Begin -= OnBegin;
         On.Celeste.Level.LoadLevel -= OnTransition;
         On.Celeste.Level.DoScreenWipe -= OnScreenWipe;
         On.Celeste.Level.TeleportTo -= OnTeleport;
+        On.Celeste.Player.Update -= onPlayerUpdate;
         On.Celeste.ChangeRespawnTrigger.OnEnter -= OnEnter;
         On.Celeste.SummitCheckpoint.Update -= OnFlag;
         On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
