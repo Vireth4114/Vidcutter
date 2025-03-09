@@ -163,7 +163,7 @@ public class VideoCreation {
             if (previousLine != null && previousLine.Event == "STATE")
                 continue;
             
-            if (currentLine.Event == "LEVEL COMPLETE" || nextline == null || nextline.Event == "DEATH") {
+            if (nextline == null || nextline.Event == "DEATH") {
                 if (lastDeath == null) {
                     processed.Add([previousLine, currentLine]);
                 } else {

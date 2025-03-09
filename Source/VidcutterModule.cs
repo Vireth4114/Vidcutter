@@ -148,11 +148,6 @@ public class VidcutterModule : EverestModule {
         orig(self);
     }
 
-    public static IEnumerator OnCollectHeart(On.Celeste.HeartGem.orig_CollectRoutine orig, HeartGem self, Player player) {
-        yield return new SwapImmediately(orig(self, player));
-        Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
-    }
-
     public static IEnumerator OnCollectCassette(On.Celeste.Cassette.orig_CollectRoutine orig, Cassette self, Player player) {
         yield return new SwapImmediately(orig(self, player));
         Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
@@ -222,7 +217,6 @@ public class VidcutterModule : EverestModule {
         On.Celeste.ChangeRespawnTrigger.OnEnter += OnEnter;
         On.Celeste.SummitCheckpoint.Update += OnFlag;
         On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
-        On.Celeste.HeartGem.CollectRoutine += OnCollectHeart;
         On.Celeste.Cassette.CollectRoutine += OnCollectCassette;
     }
 
@@ -237,7 +231,6 @@ public class VidcutterModule : EverestModule {
         On.Celeste.ChangeRespawnTrigger.OnEnter -= OnEnter;
         On.Celeste.SummitCheckpoint.Update -= OnFlag;
         On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
-        On.Celeste.HeartGem.CollectRoutine -= OnCollectHeart;
         On.Celeste.Cassette.CollectRoutine -= OnCollectCassette;
     }
 }
