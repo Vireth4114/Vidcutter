@@ -1,0 +1,17 @@
+VIDCUTTER_LEVEL_CLEARED= Terminé
+VIDCUTTER_LEVEL_UNTIL= Jusqu'à la salle
+VIDCUTTER_NOVIDEO= Aucune vidéo à traiter
+VIDCUTTER_PROCESS= Traitement
+MODOPTIONS_VIDCUTTER_TITLE= Vidcutter
+MODOPTIONS_VIDCUTTER_VIDEOFOLDER= Dossier Vidéo
+MODOPTIONS_VIDCUTTER_VIDEOFOLDER_SUB= Dossier où les vidéos sont stockées.
+MODOPTIONS_VIDCUTTER_DELAYRESPAWN= Délais avant réapparition
+MODOPTIONS_VIDCUTTER_DELAYPASS= Délais après passage de la salle
+MODOPTIONS_VIDCUTTER_CRF= CRF
+MODOPTIONS_VIDCUTTER_CRF_SUB= CRF est un paramètre de qualité vidéo. Valeure basse = meilleure qualité, mais + grand fichier.
+MODOPTIONS_VIDCUTTER_CUTVIDEOS= Couper le(s) vidéo(s)
+VIDCUTTER_FFMPEG_TITLE= Installation de FFmpeg...
+VIDCUTTER_PROCESS_TITLE= Traitement des Vidéos...
+VIDCUTTER_PROCESSINGVIDEO= Traitement de la vidéo
+VIDCUTTER_PROCESSINGCLIP= Traitement du clip
+VIDCUTTER_DOWNLOADINGFFMPEG= Installation de FFmpeg
