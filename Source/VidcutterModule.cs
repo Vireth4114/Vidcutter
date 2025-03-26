@@ -161,6 +161,13 @@ public class VidcutterModule : EverestModule {
         orig(self, player, nextLevel, introType, nearestSpawn);
     }
 
+    public static void OnRestart(On.Celeste.LevelExit.orig_ctor orig, LevelExit self, LevelExit.Mode mode, Session session, HiresSnow snow) {
+        if (mode == LevelExit.Mode.Restart) {
+            Log("RESTART CHAPTER", session: session);
+        }
+        orig(self, mode, session, snow);
+    }
+
     public static void onPlayerUpdate(On.Celeste.Player.orig_Update orig, Player self) {
         orig(self);
         Vector2 playerPos = self.Position;
@@ -237,6 +244,7 @@ public class VidcutterModule : EverestModule {
         On.Celeste.SummitCheckpoint.Update += OnFlag;
         On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
         On.Celeste.Cassette.CollectRoutine += OnCollectCassette;
+        On.Celeste.LevelExit.ctor += OnRestart;
     }
 
     public override void Unload() {
@@ -251,5 +259,6 @@ public class VidcutterModule : EverestModule {
         On.Celeste.SummitCheckpoint.Update -= OnFlag;
         On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
         On.Celeste.Cassette.CollectRoutine -= OnCollectCassette;
+        On.Celeste.LevelExit.ctor -= OnRestart;
     }
 }

@@ -99,6 +99,7 @@ public class VideoCreation {
             double clipDuration = (endTime - startTime).TotalSeconds;
             string ss = $"{startTime:hh\\:mm\\:ss\\.fff}";
             string to = $"{endTime:hh\\:mm\\:ss\\.fff}";
+            Logger.Info("Vidcutter", $"Processing clip from {ss} to {to}");
             process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", $"-ss {ss} -to {to} -i \"{video}\" -vcodec libx264 " +
                                     $"-crf {crf} -preset veryfast -y ./Vidcutter/{videoIdx}.mp4 -v warning -progress pipe:1");
             process.OutputDataReceived += (sender, e) => {
@@ -157,6 +158,11 @@ public class VideoCreation {
                 nextline = null;
             } else {
                 nextline = parsedLines[i + 1];
+            }
+            if (currentLine.Event == "RESTART CHAPTER") {
+                processed.Clear();
+                lastDeath = null;
+                continue;
             }
             if (!new[] {"ROOM PASSED", "LEVEL COMPLETE"}.Contains(currentLine.Event))
                 continue;
