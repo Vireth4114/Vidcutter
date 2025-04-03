@@ -100,7 +100,7 @@ public class VideoCreation {
             string ss = $"{startTime:hh\\:mm\\:ss\\.fff}";
             string to = $"{endTime:hh\\:mm\\:ss\\.fff}";
             Logger.Info("Vidcutter", $"Processing clip from {ss} to {to}");
-            process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", $"-ss {ss} -to {to} -i \"{video}\" -vcodec libx264 " +
+            process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", $"-ss {ss} -to {to} -i \"{video}\" -c:a copy -map 0 -vcodec libx264 " +
                                     $"-crf {crf} -preset veryfast -y ./Vidcutter/{videoIdx}.mp4 -v warning -progress pipe:1");
             process.OutputDataReceived += (sender, e) => {
                 if (e.Data?.StartsWith("out_time=") ?? false) {
@@ -123,7 +123,7 @@ public class VideoCreation {
 
     public void ConcatAndClean(int videoCount) {
         Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", 
-                                        $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c copy -y " + 
+                                        $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c copy -map 0 -y" + 
                                         $"{VidcutterModule.Settings.VideoFolder}/Vidcutter_{videos[0].Level.Replace(" ", "")}.mp4");
         process.Start();
         process.WaitForExit();
