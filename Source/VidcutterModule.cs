@@ -185,7 +185,7 @@ public class VidcutterModule : EverestModule {
     }
 
     public static bool InstallFFmpeg(OuiLoggedProgress progress) {
-        string DownloadURL = "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-7.1-essentials_build.zip";
+        string DownloadURL = "https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip";
         string DownloadFolder = Path.Combine("./VidCutter/", "ffmpeg");
         if (!Directory.Exists(DownloadFolder)) {
             Directory.CreateDirectory(DownloadFolder);
