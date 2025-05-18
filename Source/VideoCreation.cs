@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Celeste.Mod.UI;
 namespace Celeste.Mod.Vidcutter;
@@ -39,6 +40,7 @@ public class VideoCreation {
     }
 
     public static Process createProcess(string fileName, string arguments) {
+        Logger.Info("Vidcutter", $"Executing {fileName} {arguments}");
         return new Process {
             StartInfo = new ProcessStartInfo {
                 CreateNoWindow = true,
@@ -122,9 +124,28 @@ public class VideoCreation {
     }
 
     public void ConcatAndClean(int videoCount) {
+        string videoName = videos[0].Level.Replace(" ", "");
+        int outputNumber = 0;
+        foreach (string file in Directory.GetFiles(VidcutterModule.Settings.VideoFolder)) {
+            Regex regex = new Regex(@$".*\\Vidcutter_{videoName}_?(\d+)?\.mp4");
+            Match match = regex.Match(file);
+            if (match.Success) {
+                if (match.Groups.Count > 1 && match.Groups[1].Success) {
+                    outputNumber = Math.Max(int.Parse(match.Groups[1].Value), outputNumber);
+                } else {
+                    outputNumber = Math.Max(1, outputNumber);
+                }
+            }
+        }
+        string output = $"{VidcutterModule.Settings.VideoFolder}\\Vidcutter_{videoName}";
+        if (outputNumber > 0) {
+            output += $"_{outputNumber + 1}";
+        }
+        output += ".mp4";
+        Logger.Info("Vidcutter", $"Concatenating {videoCount} videos into {output}");
         Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", 
                                         $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c copy -map 0 -y " + 
-                                        $"{VidcutterModule.Settings.VideoFolder}/Vidcutter_{videos[0].Level.Replace(" ", "")}.mp4");
+                                        $"{output}");
         process.Start();
         process.WaitForExit();
 
