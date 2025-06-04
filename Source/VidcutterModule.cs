@@ -6,30 +6,42 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading;
 using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
-using Monocle;
+using Monocle; 
+using MonoMod.ModInterop;
 
 namespace Celeste.Mod.Vidcutter;
+
+[ModImportName("SpeedrunTool.SaveLoad")]
+public static class VidcutterSpeedrunToolImport {
+    public static Func<Action<Dictionary<Type, Dictionary<string, object>>, Level>, Action<Dictionary<Type, Dictionary<string, object>>, Level>, Action, Action<Level>, Action<Level>, Action, object> RegisterSaveLoadAction;
+    public static Action<Entity, bool> IgnoreSaveState;
+    public static Action<object> Unregister;
+}
 
 public class VidcutterModule : EverestModule {
     public static VidcutterModule Instance { get; private set; }
 
     public override Type SettingsType => typeof(VidcutterModuleSettings);
-    public static VidcutterModuleSettings Settings => (VidcutterModuleSettings) Instance._Settings;
+    public static VidcutterModuleSettings Settings => (VidcutterModuleSettings)Instance._Settings;
 
     public override Type SessionType => typeof(VidcutterModuleSession);
-    public static VidcutterModuleSession Session => (VidcutterModuleSession) Instance._Session;
+    public static VidcutterModuleSession Session => (VidcutterModuleSession)Instance._Session;
 
     public override Type SaveDataType => typeof(VidcutterModuleSaveData);
-    public static VidcutterModuleSaveData SaveData => (VidcutterModuleSaveData) Instance._SaveData;
+    public static VidcutterModuleSaveData SaveData => (VidcutterModuleSaveData)Instance._SaveData;
 
     public static string logPath;
     public static StreamWriter LogFileWriter = null;
 
-    public static Vector2? previousRespawnTrigger = null;
+    public static Vector2? previousRespawnPoint = null;
+    public static Level previousLevel = null;
     public static bool processWhenClose = false;
+    private static bool SpeedrunToolInstalled = false;
+    private static object action;
 
     public VidcutterModule() {
         Instance = this;
@@ -98,16 +110,11 @@ public class VidcutterModule : EverestModule {
     public static void OnComplete(On.Celeste.Level.orig_RegisterAreaComplete orig, Level self) {
         Log("LEVEL COMPLETE", session: self.Session);
         processWhenClose = false;
-        previousRespawnTrigger = null;
         orig(self);
     }
 
-    public static void OnTransition(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
-        if (playerIntro == Player.IntroTypes.Transition) {
-            Log("ROOM PASSED", session: self.Session);
-            previousRespawnTrigger = null;
-            processWhenClose = true;
-        } else if (playerIntro == Player.IntroTypes.Respawn) {
+    public static void OnDeath(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
+        if (playerIntro == Player.IntroTypes.Respawn) {
             Log("DEATH", session: self.Session);
             processWhenClose = false;
         }
@@ -119,33 +126,6 @@ public class VidcutterModule : EverestModule {
         orig(self);
     }
 
-    public static void OnScreenWipe(On.Celeste.Level.orig_DoScreenWipe orig, Level self, bool wipeIn, Action onComplete = null, bool hiresSnow = false) {
-        if (onComplete != null && wipeIn) {
-            Log("STATE", session: self.Session);
-            processWhenClose = false;
-        }
-        orig(self, wipeIn, onComplete, hiresSnow);
-    }
-
-    public static void OnEnter(On.Celeste.ChangeRespawnTrigger.orig_OnEnter orig, ChangeRespawnTrigger self, Player player) {
-        if (previousRespawnTrigger == null || previousRespawnTrigger != self.Center) {
-            Log("ROOM PASSED", session: player.SceneAs<Level>().Session);
-            previousRespawnTrigger = self.Center;
-        }
-        orig(self, player);
-    }
-    
-    public static void OnFlag(On.Celeste.SummitCheckpoint.orig_Update orig, SummitCheckpoint self) {
-        // IL Hook would be cleaner but On hooks are nice too heh
-        if (!self.Activated) {
-            Player player = self.CollideFirst<Player>();
-            if (player != null && player.OnGround() && player.Speed.Y >= 0f) {
-                Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
-            }
-        }
-        orig(self);
-    }
-
     public static void OnCollectStrawberry(On.Celeste.Strawberry.orig_OnCollect orig, Strawberry self) {
         Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
         orig(self);
@@ -154,11 +134,6 @@ public class VidcutterModule : EverestModule {
     public static IEnumerator OnCollectCassette(On.Celeste.Cassette.orig_CollectRoutine orig, Cassette self, Player player) {
         yield return new SwapImmediately(orig(self, player));
         Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
-    }
-
-    public static void OnTeleport(On.Celeste.Level.orig_TeleportTo orig, Level self, Player player, string nextLevel, Player.IntroTypes introType, Vector2? nearestSpawn = null) {
-        Log("ROOM PASSED", session: self.Session);
-        orig(self, player, nextLevel, introType, nearestSpawn);
     }
 
     public static void OnRestart(On.Celeste.LevelExit.orig_ctor orig, LevelExit self, LevelExit.Mode mode, Session session, HiresSnow snow) {
@@ -175,6 +150,12 @@ public class VidcutterModule : EverestModule {
         if (respawnPoint == null) {
             return;
         }
+        if (previousRespawnPoint != respawnPoint || previousLevel != self.SceneAs<Level>()) {
+            previousLevel = self.SceneAs<Level>();
+            previousRespawnPoint = respawnPoint;
+            Log($"ROOM PASSED", session: self.SceneAs<Level>().Session);
+            processWhenClose = true;
+        }
         float deltaY = Math.Abs(playerPos.Y - respawnPoint.Value.Y);
         float deltaX = Math.Abs(playerPos.X - respawnPoint.Value.X);
         double distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -182,6 +163,14 @@ public class VidcutterModule : EverestModule {
             Log($"ROOM PASSED", session: self.SceneAs<Level>().Session);
             processWhenClose = false;
         }
+    }
+
+    public static void onLoadState(Level level)
+    {
+        Log("STATE", session: level.Session);
+        processWhenClose = false;
+        previousRespawnPoint = level.Session.RespawnPoint;
+        previousLevel = level;
     }
 
     public static bool InstallFFmpeg(OuiLoggedProgress progress) {
@@ -236,29 +225,36 @@ public class VidcutterModule : EverestModule {
         };
         On.Celeste.Level.RegisterAreaComplete += OnComplete;
         On.Celeste.Level.Begin += OnBegin;
-        On.Celeste.Level.LoadLevel += OnTransition;
-        On.Celeste.Level.DoScreenWipe += OnScreenWipe;
-        On.Celeste.Level.TeleportTo += OnTeleport;
+        On.Celeste.Level.LoadLevel += OnDeath;
         On.Celeste.Player.Update += onPlayerUpdate;
-        On.Celeste.ChangeRespawnTrigger.OnEnter += OnEnter;
-        On.Celeste.SummitCheckpoint.Update += OnFlag;
         On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
         On.Celeste.Cassette.CollectRoutine += OnCollectCassette;
         On.Celeste.LevelExit.ctor += OnRestart;
+        typeof(VidcutterSpeedrunToolImport).ModInterop();
+        SpeedrunToolInstalled = VidcutterSpeedrunToolImport.IgnoreSaveState is not null;
+        if (SpeedrunToolInstalled) {
+            action = VidcutterSpeedrunToolImport.RegisterSaveLoadAction(
+                (_, level) => {},
+                (_, level) => { onLoadState(level); },
+                null,
+                null,
+                null,
+                null
+            );
+        }
     }
 
     public override void Unload() {
         LogFileWriter.Close();
         On.Celeste.Level.RegisterAreaComplete -= OnComplete;
         On.Celeste.Level.Begin -= OnBegin;
-        On.Celeste.Level.LoadLevel -= OnTransition;
-        On.Celeste.Level.DoScreenWipe -= OnScreenWipe;
-        On.Celeste.Level.TeleportTo -= OnTeleport;
+        On.Celeste.Level.LoadLevel -= OnDeath;
         On.Celeste.Player.Update -= onPlayerUpdate;
-        On.Celeste.ChangeRespawnTrigger.OnEnter -= OnEnter;
-        On.Celeste.SummitCheckpoint.Update -= OnFlag;
         On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
         On.Celeste.Cassette.CollectRoutine -= OnCollectCassette;
         On.Celeste.LevelExit.ctor -= OnRestart;
+        if (SpeedrunToolInstalled) {
+            VidcutterSpeedrunToolImport.Unregister(action);
+        }
     }
 }

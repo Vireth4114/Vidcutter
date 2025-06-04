@@ -142,6 +142,9 @@ public class VideoCreation {
             output += $"_{outputNumber + 1}";
         }
         output += ".mp4";
+        foreach (char c in Path.GetInvalidFileNameChars()) {
+            output = output.Replace(c, '_');
+        }
         Logger.Info("Vidcutter", $"Concatenating {videoCount} videos into {output}");
         Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", 
                                         $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c:v copy -map 0 -y " +
