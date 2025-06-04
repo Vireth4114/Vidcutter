@@ -137,14 +137,14 @@ public class VideoCreation {
                 }
             }
         }
+        foreach (char c in Path.GetInvalidFileNameChars()) {
+            videoName = videoName.Replace(c, '_');
+        }
         string output = $"{VidcutterModule.Settings.VideoFolder}\\Vidcutter_{videoName}";
         if (outputNumber > 0) {
             output += $"_{outputNumber + 1}";
         }
         output += ".mp4";
-        foreach (char c in Path.GetInvalidFileNameChars()) {
-            output = output.Replace(c, '_');
-        }
         Logger.Info("Vidcutter", $"Concatenating {videoCount} videos into {output}");
         Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", 
                                         $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c:v copy -map 0 -y " +

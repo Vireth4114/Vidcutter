@@ -41,6 +41,7 @@ public class VidcutterModule : EverestModule {
     public static Level previousLevel = null;
     public static bool processWhenClose = false;
     private static bool SpeedrunToolInstalled = false;
+    private static bool inState = false;
     private static object action;
 
     public VidcutterModule() {
@@ -117,23 +118,29 @@ public class VidcutterModule : EverestModule {
         if (playerIntro == Player.IntroTypes.Respawn) {
             Log("DEATH", session: self.Session);
             processWhenClose = false;
+            inState = false;
         }
         orig(self, playerIntro, isFromLoader);
     }
 
     public static void OnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
         Log("LEVEL LOADED", session: self.Session);
+        inState = false;
         orig(self);
     }
 
     public static void OnCollectStrawberry(On.Celeste.Strawberry.orig_OnCollect orig, Strawberry self) {
-        Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
+        if (!inState) {
+            Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
+        }
         orig(self);
     }
 
     public static IEnumerator OnCollectCassette(On.Celeste.Cassette.orig_CollectRoutine orig, Cassette self, Player player) {
         yield return new SwapImmediately(orig(self, player));
-        Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
+        if (!inState) {
+            Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
+        }
     }
 
     public static void OnRestart(On.Celeste.LevelExit.orig_ctor orig, LevelExit self, LevelExit.Mode mode, Session session, HiresSnow snow) {
@@ -159,7 +166,7 @@ public class VidcutterModule : EverestModule {
         float deltaY = Math.Abs(playerPos.Y - respawnPoint.Value.Y);
         float deltaX = Math.Abs(playerPos.X - respawnPoint.Value.X);
         double distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (distance <= 50 & processWhenClose) {
+        if (distance <= 50 && processWhenClose && !inState) {
             Log($"ROOM PASSED", session: self.SceneAs<Level>().Session);
             processWhenClose = false;
         }
@@ -171,6 +178,7 @@ public class VidcutterModule : EverestModule {
         processWhenClose = false;
         previousRespawnPoint = level.Session.RespawnPoint;
         previousLevel = level;
+        inState = true;
     }
 
     public static bool InstallFFmpeg(OuiLoggedProgress progress) {
