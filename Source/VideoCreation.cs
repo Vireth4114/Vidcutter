@@ -193,7 +193,7 @@ public class VideoCreation {
             if (previousLine != null && previousLine.Event == "STATE")
                 continue;
             
-            if (nextline == null || nextline.Event == "DEATH") {
+            if (nextline == null || nextline.Event != "ROOM PASSED") {
                 if (lastDeath == null) {
                     processed.Add([previousLine, currentLine]);
                 } else {
