@@ -148,7 +148,7 @@ public class VideoCreation {
         Logger.Info("Vidcutter", $"Concatenating {videoCount} videos into {output}");
         Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", 
                                         $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c:v copy -map 0 -y " +
-                                        $"{output}");
+                                        $"\"{output}\"");
         process.Start();
         process.WaitForExit();
 
