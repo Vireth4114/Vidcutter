@@ -109,8 +109,10 @@ public class VidcutterModule : EverestModule {
     }
 
     public static void OnComplete(On.Celeste.Level.orig_RegisterAreaComplete orig, Level self) {
-        Log("LEVEL COMPLETE", session: self.Session);
-        processWhenClose = false;
+        if (!self.Completed) {
+            Log("LEVEL COMPLETE", session: self.Session);
+            processWhenClose = false;
+        }
         orig(self);
     }
 
