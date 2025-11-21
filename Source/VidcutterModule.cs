@@ -174,9 +174,13 @@ public class VidcutterModule : EverestModule {
         }
     }
 
-    public static void onLoadState(Level level)
-    {
-        Log("STATE", session: level.Session);
+    public static void onLoadState(Level level) {
+        Vector2? playerPosition = level.Tracker.GetEntity<Player>()?.Position;
+        if (playerPosition == level.Session.RespawnPoint) {
+            Log("DEATH", session: level.Session);
+        } else {   
+            Log("STATE", session: level.Session);
+        }
         processWhenClose = false;
         previousRespawnPoint = level.Session.RespawnPoint;
         previousLevel = level;
