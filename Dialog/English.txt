@@ -7,6 +7,7 @@ MODOPTIONS_VIDCUTTER_VIDEOFOLDER= Video Folder
 MODOPTIONS_VIDCUTTER_VIDEOFOLDER_SUB= Folder where the videos are stored.
 MODOPTIONS_VIDCUTTER_DELAYRESPAWN= Delay before respawn
 MODOPTIONS_VIDCUTTER_DELAYPASS= Delay after room pass
+MODOPTIONS_VIDCUTTER_DELAYCOMPLETE= Delay after chapter completion
 MODOPTIONS_VIDCUTTER_CRF= CRF
 MODOPTIONS_VIDCUTTER_CRF_SUB= CRF is a quality setting for the video. Lower is better quality but bigger file size.
 MODOPTIONS_VIDCUTTER_CUTVIDEOS= Cut Video(s)

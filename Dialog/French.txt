@@ -5,8 +5,9 @@ VIDCUTTER_PROCESS= Traitement
 MODOPTIONS_VIDCUTTER_TITLE= Vidcutter
 MODOPTIONS_VIDCUTTER_VIDEOFOLDER= Dossier Vidéo
 MODOPTIONS_VIDCUTTER_VIDEOFOLDER_SUB= Dossier où les vidéos sont stockées.
-MODOPTIONS_VIDCUTTER_DELAYRESPAWN= Délais avant réapparition
-MODOPTIONS_VIDCUTTER_DELAYPASS= Délais après passage de la salle
+MODOPTIONS_VIDCUTTER_DELAYRESPAWN= Délai avant réapparition
+MODOPTIONS_VIDCUTTER_DELAYPASS= Délai après passage de la salle
+MODOPTIONS_VIDCUTTER_DELAYCOMPLETE= Délai après fin du chapitre
 MODOPTIONS_VIDCUTTER_CRF= CRF
 MODOPTIONS_VIDCUTTER_CRF_SUB= CRF est un paramètre de qualité vidéo. Valeure basse = meilleure qualité, mais + grand fichier.
 MODOPTIONS_VIDCUTTER_CUTVIDEOS= Couper le(s) vidéo(s)

@@ -37,6 +37,16 @@ public class VidcutterModuleSettings : EverestModuleSettings {
         });
     }
 
+    [SettingIgnore]
+    public int DelayComplete { get; set; } = 20;
+    public void CreateDelayCompleteEntry(TextMenu menu, bool inGame) {
+        menu.Add(new TextMenu.Slider(Dialog.Clean("MODOPTIONS_VIDCUTTER_DELAYCOMPLETE"), i => $"{i}s", 0, 300, DelayComplete) {
+            OnValueChange = (value) => {
+                DelayComplete = value;
+            }
+        });
+    }
+
     [SettingName("MODOPTIONS_VIDCUTTER_CRF")]
     [SettingSubText("MODOPTIONS_VIDCUTTER_CRF_SUB")]
     [SettingRange(0, 51)]

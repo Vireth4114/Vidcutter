@@ -97,7 +97,11 @@ public class VideoCreation {
             } else {
                 startTime =  line[0].Time + TimeSpan.FromSeconds(VidcutterModule.Settings.DelayStart) - startVideo;
             }
-            TimeSpan endTime = line[1].Time + TimeSpan.FromSeconds(VidcutterModule.Settings.DelayEnd) - startVideo;
+            float delay = VidcutterModule.Settings.DelayEnd;
+            if (line[1].Event == "LEVEL COMPLETE") {
+                delay = VidcutterModule.Settings.DelayComplete;
+            }
+            TimeSpan endTime = line[1].Time + TimeSpan.FromSeconds(delay) - startVideo;
             double clipDuration = (endTime - startTime).TotalSeconds;
             string ss = $"{startTime:hh\\:mm\\:ss\\.fff}";
             string to = $"{endTime:hh\\:mm\\:ss\\.fff}";
@@ -188,12 +192,12 @@ public class VideoCreation {
                 lastDeath = null;
                 continue;
             }
-            if (!new[] {"ROOM PASSED", "LEVEL COMPLETE"}.Contains(currentLine.Event))
+            if (!currentLine.isCleared())
                 continue;
             if (previousLine != null && previousLine.Event == "STATE")
                 continue;
             
-            if (nextline == null || nextline.Event != "ROOM PASSED") {
+            if (nextline == null || !nextline.isCleared()) {
                 if (lastDeath == null) {
                     processed.Add([previousLine, currentLine]);
                 } else {

@@ -13,4 +13,9 @@ public class LoggedString {
         Level = level;
         Room = room;
     }
+
+    public bool isCleared() {
+        string[] clearedEvents = {"ROOM PASSED", "LEVEL COMPLETE"};
+        return clearedEvents.Contains(Event);
+    }
 }
