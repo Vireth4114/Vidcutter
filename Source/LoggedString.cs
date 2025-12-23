@@ -18,4 +18,8 @@ public class LoggedString {
         string[] clearedEvents = {"ROOM PASSED", "LEVEL COMPLETE"};
         return clearedEvents.Contains(Event);
     }
+
+    public override string ToString() {
+        return $"[{Time:yyyy-MM-dd HH:mm:ss.fff}] {Level} | {Room} | {Event}";
+    }
 }

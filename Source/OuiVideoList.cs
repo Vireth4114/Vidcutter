@@ -100,21 +100,9 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         if (id == 0) {
             menu.Add(new SubHeader(Dialog.Clean("VIDCUTTER_NOVIDEO")));
         } else {
-            Button button = new Button(Dialog.Clean("VIDCUTTER_PROCESS")) {
-                OnPressed = () => {
-                    vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
-                    foreach (int i in toProcess) {
-                        string[] splitted = rowInfos[i].Split(" | ");
-                        vc.videos.Add(new ProcessedVideo(splitted[0], splitted[1]));
-                    }
-                    vc.ProcessVideosProgress();
-                },
-                Disabled = true
-            };
-            menu.Add(button);
-            toProcess.CollectionChanged += (sender, args) => {
-                button.Disabled = toProcess.Count == 0;
-            };
+            menu.Add(getProcessButton(vc));
+            menu.Add(getProcessAndDeleteButton(vc));
+            menu.Add(getDeleteButton());
         }
 
         if (selected >= 0) {
@@ -123,6 +111,63 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         }
 
         Scene.Add(menu);
+    }
+
+    public Button getProcessButton(VideoCreation vc) {
+        Button button = new Button(Dialog.Clean("VIDCUTTER_PROCESS")) {
+            OnPressed = () => {
+                vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
+                foreach (int i in toProcess) {
+                    string[] splitted = rowInfos[i].Split(" | ");
+                    vc.videos.Add(new ProcessedVideo(splitted[0], splitted[1]));
+                }
+                vc.ProcessVideosProgress(withDelete: false);
+            },
+            Disabled = true
+        };
+        toProcess.CollectionChanged += (sender, args) => {
+            button.Disabled = toProcess.Count == 0;
+        };
+        return button;
+    }
+
+    public Button getProcessAndDeleteButton(VideoCreation vc) {
+        Button button = new Button(Dialog.Clean("VIDCUTTER_PROCESS_AND_DELETE")) {
+            OnPressed = () => {
+                vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
+                List<ProcessedVideo> rowsToDelete = new List<ProcessedVideo>();
+                foreach (int i in toProcess) {
+                    string[] splitted = rowInfos[i].Split(" | ");
+                    vc.videos.Add(new ProcessedVideo(splitted[0], splitted[1]));
+                    rowsToDelete.Add(new ProcessedVideo(splitted[0], splitted[1]));
+                }
+                vc.ProcessVideosProgress(withDelete: true);
+            },
+            Disabled = true
+        };
+        toProcess.CollectionChanged += (sender, args) => {
+            button.Disabled = toProcess.Count == 0;
+        };
+        return button;
+    }
+
+    public Button getDeleteButton() {
+        Button button = new Button(Dialog.Clean("VIDCUTTER_DELETE")) {
+            OnPressed = () => {
+                List<ProcessedVideo> rowsToDelete = new List<ProcessedVideo>();
+                foreach (int i in toProcess) {
+                    string[] splitted = rowInfos[i].Split(" | ");
+                    rowsToDelete.Add(new ProcessedVideo(splitted[0], splitted[1]));
+                }
+                VidcutterModule.deleteLogs(rowsToDelete);
+                OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
+            },
+            Disabled = true
+        };
+        toProcess.CollectionChanged += (sender, args) => {
+            button.Disabled = toProcess.Count == 0;
+        };
+        return button;
     }
 
     public override IEnumerator Enter(Oui from) {

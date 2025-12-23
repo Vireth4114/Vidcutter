@@ -53,7 +53,9 @@ public class VideoCreation {
     }
 
     public static TimeSpan? getVideoDuration(string video) {
-        // This is slow, maybe segment display of videos to make it less visible ?
+        if (VidcutterModule.DurationCache.ContainsKey(video)) {
+            return VidcutterModule.DurationCache[video];
+        }
         Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffprobe",  $"-i \"{video}\" -show_entries format=duration -v quiet -of csv=\"p=0\"");
         process.Start();
         string strDuration = process.StandardOutput.ReadToEnd();
@@ -61,10 +63,12 @@ public class VideoCreation {
         if (strDuration == "") {
             return null;
         }
-        return TimeSpan.FromSeconds(double.Parse(strDuration));
+        TimeSpan duration = TimeSpan.FromSeconds(double.Parse(strDuration));
+        VidcutterModule.writeCache(video, duration);
+        return duration;
     }
 
-    public void ProcessVideosProgress() {
+    public void ProcessVideosProgress(bool withDelete = false) {
         progress.Init<OuiModOptions>(Dialog.Clean("VIDCUTTER_PROCESS_TITLE"), new Task(() => {
             int idx = 1;
             int videoIdx = 1;
@@ -73,6 +77,9 @@ public class VideoCreation {
                 idx = ProcessVideo(video, idx);
             }
             ConcatAndClean(idx);
+            if (withDelete) {
+                VidcutterModule.deleteLogs(videos);
+            }
         }), 100);
     }
 

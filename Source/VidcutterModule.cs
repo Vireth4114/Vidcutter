@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
@@ -43,6 +44,8 @@ public class VidcutterModule : EverestModule {
     private static bool SpeedrunToolInstalled = false;
     private static bool inState = false;
     private static object action;
+
+    public static Dictionary<string, TimeSpan> DurationCache = null;
 
     public VidcutterModule() {
         Instance = this;
@@ -256,6 +259,30 @@ public class VidcutterModule : EverestModule {
                 null
             );
         }
+        DurationCache = new Dictionary<string, TimeSpan>();
+
+        string cacheFile = Path.Combine("./VidCutter/", "durationCache.txt");
+        if (File.Exists(cacheFile)) {
+            string[] lines = File.ReadAllLines(cacheFile);
+            foreach (string line in lines) {
+                string[] splitted = line.Split(" | ");
+                if (splitted.Length == 2) {
+                    DurationCache[splitted[0]] = TimeSpan.Parse(splitted[1]);
+                }
+            }
+        }
+    }
+
+    public static void writeCache(string video, TimeSpan duration) {
+        if (DurationCache != null && !DurationCache.ContainsKey(video)) {
+            DurationCache[video] = duration;
+        }
+        string cacheFile = Path.Combine("./VidCutter/", "durationCache.txt");
+        using (StreamWriter writer = new StreamWriter(cacheFile, false)) {
+            foreach (KeyValuePair<string, TimeSpan> entry in DurationCache) {
+                writer.WriteLine($"{entry.Key} | {entry.Value}");
+            }
+        }
     }
 
     public override void Unload() {
@@ -270,5 +297,35 @@ public class VidcutterModule : EverestModule {
         if (SpeedrunToolInstalled) {
             VidcutterSpeedrunToolImport.Unregister(action);
         }
+    }
+
+    public static void deleteLogs(List<ProcessedVideo> rows){
+        List<LoggedString> allLogs = getAllLogs();
+        foreach (ProcessedVideo row in rows) {
+            string video = Path.Combine(Settings.VideoFolder, row.Video);
+            string level = row.Level;
+            DateTime startVideo = File.GetCreationTime(video);
+            TimeSpan? duration = VideoCreation.getVideoDuration(video);
+            if (duration == null) {
+                return;
+            }
+            DateTime endVideo = startVideo + (TimeSpan)duration;
+            List<LoggedString> allLogsCopy = [.. allLogs];
+            foreach (LoggedString log in allLogsCopy) {
+                if (startVideo < log.Time && log.Time < endVideo && log.Level == level) {
+                    allLogs.Remove(log);
+                }
+            }
+        }
+
+        LogFileWriter.Close();
+        using (StreamWriter writer = new StreamWriter(logPath, false)) {
+            foreach (LoggedString log in allLogs) {
+                writer.WriteLine(log.ToString());
+            }
+        }
+        LogFileWriter = new StreamWriter(logPath, true) {
+            AutoFlush = true
+        };
     }
 }
