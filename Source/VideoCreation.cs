@@ -18,7 +18,7 @@ public class VideoCreation {
     }
 
     public List<string> GetAllVideos() {
-        List<LoggedString> logs = VidcutterModule.getAllLogs();
+        List<LoggedString> logs = LogManager.getAllLogs();
         if (logs.Count == 0) {
             return new List<string>();
         }
@@ -78,7 +78,7 @@ public class VideoCreation {
             }
             ConcatAndClean(idx);
             if (withDelete) {
-                VidcutterModule.deleteLogs(videos);
+                LogManager.deleteLogs(videos);
             }
         }), 100);
     }
@@ -170,11 +170,11 @@ public class VideoCreation {
     }
 
     public static List<LoggedString[]> ProcessLogs(string video) {
-        return ProcessLogs(VidcutterModule.getAllLogs(video));
+        return ProcessLogs(LogManager.getAllLogs(video));
     }
 
     public static List<LoggedString[]> ProcessLogs(DateTime startTime, DateTime endTime, string level = null) {
-        return ProcessLogs(VidcutterModule.getAllLogs(startTime, endTime, level));
+        return ProcessLogs(LogManager.getAllLogs(startTime, endTime, level));
     }
 
     public static List<LoggedString[]> ProcessLogs(List<LoggedString> parsedLines) {

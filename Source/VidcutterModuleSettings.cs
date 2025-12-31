@@ -4,9 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Celeste.Mod.UI;
-using Microsoft.Xna.Framework;
-using On.Celeste;
-using static Celeste.TextMenuExt;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -64,7 +61,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
         }
         menu.Add(new TextMenu.Button(Dialog.Clean("MODOPTIONS_VIDCUTTER_CUTVIDEOS")) {
             OnPressed = () => {
-            OuiLoggedProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
+                OuiLoggedProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
                 if (!Directory.Exists("./VidCutter/ffmpeg/ffmpeg")) {
                     try {
                         // Check for FFmpeg in PATH

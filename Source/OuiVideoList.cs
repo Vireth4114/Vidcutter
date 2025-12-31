@@ -2,17 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks.Dataflow;
-using Celeste.Mod.Helpers;
 using Celeste.Mod.Vidcutter;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Media;
 using Monocle;
 using static Celeste.TextMenu;
-using static Celeste.TextMenuExt;
 
 namespace Celeste.Mod.UI;
 
@@ -159,7 +152,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
                     string[] splitted = rowInfos[i].Split(" | ");
                     rowsToDelete.Add(new ProcessedVideo(splitted[0], splitted[1]));
                 }
-                VidcutterModule.deleteLogs(rowsToDelete);
+                LogManager.deleteLogs(rowsToDelete);
                 OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
             },
             Disabled = true
