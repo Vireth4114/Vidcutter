@@ -77,7 +77,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
                         FFmpegPath = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-7.1-essentials_build", "bin") + "/";
                     }
                 } else {
-                    FFmpegPath = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-7.1-essentials_build", "bin") + "/";
+                    FFmpegPath = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-master-latest-linux64-gpl", "bin") + "/";
                     OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
                 }
             }

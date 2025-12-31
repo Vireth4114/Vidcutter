@@ -94,7 +94,7 @@ public class VideoCreation {
         DateTime endVideo = startVideo + (TimeSpan)duration;
         List<LoggedString[]> processed = ProcessLogs(startVideo, endVideo, processedVideo.Level);
         
-        StreamWriter listVideos = new StreamWriter("./Vidcutter/videos.txt", true);
+        StreamWriter listVideos = new StreamWriter(Path.Combine("./VidCutter/", Path.Combine("videos.txt")), true);
         int videoIdx = startIdx;
         foreach (LoggedString[] line in processed) {
             progress.Progress = 0;
@@ -114,7 +114,7 @@ public class VideoCreation {
             string to = $"{endTime:hh\\:mm\\:ss\\.fff}";
             Logger.Info("Vidcutter", $"Processing clip from {ss} to {to}");
             process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", $"-ss {ss} -to {to} -i \"{video}\" -c:a copy -map 0 -vcodec libx264 " +
-                                    $"-crf {crf} -preset veryfast -y ./Vidcutter/{videoIdx}.mp4 -v warning -progress pipe:1");
+                                    $"-crf {crf} -preset veryfast -y ./VidCutter/{videoIdx}.mp4 -v warning -progress pipe:1");
             process.OutputDataReceived += (sender, e) => {
                 if (e.Data?.StartsWith("out_time=") ?? false) {
                     string[] splitted = e.Data.Split('=');
@@ -151,21 +151,21 @@ public class VideoCreation {
         foreach (char c in Path.GetInvalidFileNameChars()) {
             videoName = videoName.Replace(c, '_');
         }
-        string output = $"{VidcutterModule.Settings.VideoFolder}\\Vidcutter_{videoName}";
+        string output = Path.Combine(VidcutterModule.Settings.VideoFolder, $"Vidcutter_{videoName}");
         if (outputNumber > 0) {
             output += $"_{outputNumber + 1}";
         }
         output += ".mp4";
         Logger.Info("Vidcutter", $"Concatenating {videoCount} videos into {output}");
         Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", 
-                                        $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c:v copy -map 0 -y " +
+                                        $"-f concat -safe 0 -i ./VidCutter/videos.txt -c:v copy -map 0 -y " +
                                         $"\"{output}\"");
         process.Start();
         process.WaitForExit();
 
-        File.Delete("./Vidcutter/videos.txt");
+        File.Delete("./VidCutter/videos.txt");
         for (int i = 1; i < videoCount; i++) {
-            File.Delete($"./Vidcutter/{i}.mp4");
+            File.Delete($"./VidCutter/{i}.mp4");
         }
     }
 
