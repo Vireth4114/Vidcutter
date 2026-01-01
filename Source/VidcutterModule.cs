@@ -13,6 +13,7 @@ using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
 using Monocle; 
 using MonoMod.ModInterop;
+using MonoMod.RuntimeDetour;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -39,11 +40,12 @@ public class VidcutterModule : EverestModule {
     public static StreamWriter LogFileWriter = null;
 
     public static Vector2? previousRespawnPoint = null;
-    public static Level previousLevel = null;
     public static bool processWhenClose = false;
     private static bool SpeedrunToolInstalled = false;
     private static bool inState = false;
     private static object action;
+    private static EverestModule vivHelperModule;
+    private static Hook vivHelperRespawnHook;
 
     public static Dictionary<string, TimeSpan> DurationCache = null;
 
@@ -162,8 +164,7 @@ public class VidcutterModule : EverestModule {
         if (respawnPoint == null) {
             return;
         }
-        if (previousRespawnPoint != respawnPoint || previousLevel != self.SceneAs<Level>()) {
-            previousLevel = self.SceneAs<Level>();
+        if (previousRespawnPoint != respawnPoint) {
             previousRespawnPoint = respawnPoint;
             Log($"ROOM PASSED", session: self.SceneAs<Level>().Session);
             processWhenClose = true;
@@ -186,8 +187,18 @@ public class VidcutterModule : EverestModule {
         }
         processWhenClose = false;
         previousRespawnPoint = level.Session.RespawnPoint;
-        previousLevel = level;
         inState = true;
+    }
+
+    public static Level ModifyRoomToRespawnTo_Hook(Func<Level, Level> orig, Level level) {
+        Vector2? respawnPoint = level.Session.RespawnPoint;
+        Level returnValue = orig(level);
+        Vector2? newRespawnPoint = returnValue.Session.RespawnPoint;
+        if (respawnPoint != newRespawnPoint) {
+            Log($"INTER ROOM PASSED", session: level.Session);
+            previousRespawnPoint = newRespawnPoint;
+        }
+        return returnValue;
     }
 
     public static bool InstallFFmpeg(OuiLoggedProgress progress) {
@@ -271,6 +282,37 @@ public class VidcutterModule : EverestModule {
                 }
             }
         }
+        
+        EverestModuleMetadata vivHelper = new() {
+            Name = "VivHelper",
+            Version = new Version(1, 14, 0)
+        };
+
+        Everest.Loader.TryGetDependency(vivHelper, out vivHelperModule);
+
+        createVivHelperHook();
+    }
+
+    public static void createVivHelperHook() {
+        if (vivHelperModule == null) {
+            Logger.Info("Vidcutter", "VivHelper not found, skipping hook installation");
+            return;
+        }
+
+        Assembly vivHelperAsm = vivHelperModule.GetType().Assembly;
+
+        MethodInfo target = vivHelperAsm.GetType("VivHelper.Entities.SpawnPointHooks").GetMethod(
+            "ModifyRoomToRespawnTo",
+            BindingFlags.NonPublic | BindingFlags.Static
+        );
+
+        vivHelperRespawnHook = new Hook(
+            target,
+            typeof(VidcutterModule).GetMethod(
+                nameof(ModifyRoomToRespawnTo_Hook),
+                BindingFlags.Public | BindingFlags.Static
+            )
+        );
     }
 
     public static void writeCache(string video, TimeSpan duration) {
@@ -297,6 +339,8 @@ public class VidcutterModule : EverestModule {
         if (SpeedrunToolInstalled) {
             VidcutterSpeedrunToolImport.Unregister(action);
         }
+        vivHelperRespawnHook?.Dispose();
+        vivHelperRespawnHook = null;
     }
 
     public static void deleteLogs(List<ProcessedVideo> rows){
