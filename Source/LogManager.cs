@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Celeste.Mod.Vidcutter.Utils;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -28,18 +29,15 @@ class LogManager {
         LogFileWriter.WriteLine(toLog);
     }
 
-    public static List<LoggedString> getAllLogs(string video, string level = null) {
-        DateTime startVideo = File.GetCreationTime(video);
-        TimeSpan? duration = VideoCreation.getVideoDuration(video);
-        Logger.Info("Vidcutter", $"Video {video} started at {startVideo} and has duration {duration}");
-        if (duration == null) {
-            return new List<LoggedString>();
-        }
-        DateTime endVideo = startVideo + (TimeSpan)duration;
-        return getAllLogs(startVideo, endVideo, level);
+    public static List<LoggedString> GetAllLogs(VideoFile video, string level = null) {
+        DateTime startVideo = video.GetCreationTime();
+        TimeSpan duration = video.GetVideoDuration();
+        Logger.Info("Vidcutter", video.ToString());
+        DateTime endVideo = startVideo + duration;
+        return GetAllLogs(startVideo, endVideo, level);
     }
 
-    public static List<LoggedString> getAllLogs(DateTime? startVideo = null, DateTime? endVideo = null, string level = null) {
+    public static List<LoggedString> GetAllLogs(DateTime? startVideo = null, DateTime? endVideo = null, string level = null) {
         LogFileWriter.Close();
         string[] lines = File.ReadAllLines(logPath);
         List<LoggedString> parsedLines = new List<LoggedString>();
@@ -68,7 +66,7 @@ class LogManager {
     }
 
     public static void deleteLogs(List<ProcessedVideo> rows){
-        List<LoggedString> allLogs = getAllLogs();
+        List<LoggedString> allLogs = GetAllLogs();
         foreach (ProcessedVideo row in rows) {
             string video = Path.Combine(VidcutterModule.Settings.VideoFolder, row.Video);
             string level = row.Level;
