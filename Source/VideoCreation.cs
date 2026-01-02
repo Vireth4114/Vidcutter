@@ -159,11 +159,13 @@ public class VideoCreation {
                                         $"\"{output}\"");
         process.Start();
         process.WaitForExit();
+        Logger.Info("Vidcutter", $"Concatenation done, saved at {output}. Starting cleaning process.");
 
         File.Delete("./VidCutter/videos.txt");
         for (int i = 1; i < videoCount; i++) {
             File.Delete($"./VidCutter/{i}.mp4");
         }
+        Logger.Info("Vidcutter", "Cleaning process has ended correctly.");
     }
 
     public static List<LoggedString[]> ProcessLogs(VideoFile video) {
