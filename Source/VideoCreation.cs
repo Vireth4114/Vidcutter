@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -179,40 +180,34 @@ public class VideoCreation {
 
     public static List<LoggedString[]> ProcessLogs(List<LoggedString> parsedLines) {
         List<LoggedString[]> processed = new List<LoggedString[]>();
-        LoggedString lastDeath = null;
+        List<LoggedString> currentClip = new List<LoggedString>();
         for (int i = 0; i < parsedLines.Count; i++) {
-            LoggedString previousLine;
-            if (i == 0) {
-                previousLine = null;
-            } else {
-                previousLine = parsedLines[i - 1];
-            }
+            LoggedString previousLine = i > 0 ? parsedLines[i - 1] : null;
             LoggedString currentLine = parsedLines[i];
-            LoggedString nextline;
-            if (i == parsedLines.Count - 1) {
-                nextline = null;
-            } else {
-                nextline = parsedLines[i + 1];
-            }
+            LoggedString nextline = i < parsedLines.Count - 1 ? parsedLines[i + 1] : null;
+
             if (currentLine.Event == "RESTART CHAPTER") {
                 processed.Clear();
-                lastDeath = null;
+            }
+            
+            if (!currentLine.isCleared() || previousLine?.Event == "STATE") {
+                currentClip.Clear();
                 continue;
             }
-            if (!currentLine.isCleared())
-                continue;
-            if (previousLine != null && previousLine.Event == "STATE")
-                continue;
+
+            currentClip.Add(previousLine);
             
-            if (nextline == null || !nextline.isCleared()) {
-                if (lastDeath == null) {
-                    processed.Add([previousLine, currentLine]);
-                } else {
-                    processed.Add([lastDeath, currentLine]);
-                    lastDeath = null;
+            if (nextline?.isCleared() != true) {
+                LoggedString clipEnd = currentLine;
+                
+                if (nextline?.Event == "INTER ROOM PASSED") {
+                    currentClip.Add(currentLine);
+                    clipEnd = currentClip.LastOrDefault(log => log.Room == nextline.Room && log.isCleared());
                 }
-            } else if (lastDeath == null) {
-                lastDeath = previousLine;
+                
+                if (clipEnd != null) {
+                    processed.Add([currentClip[0], clipEnd]);
+                }
             }
         }
         return processed;
