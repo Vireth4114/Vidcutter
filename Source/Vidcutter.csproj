@@ -17,6 +17,7 @@
     </ItemDefinitionGroup>
 
     <ItemGroup>
+        <PackageReference Include="Mono.Cecil" Version="0.11.6" />
         <PackageReference Include="MonoMod.RuntimeDetour" Version="25.0.2" PrivateAssets="all" ExcludeAssets="runtime" />
         <PackageReference Include="MonoMod.Patcher" Version="25.0.0-prerelease.2" />
         <PackageReference Include="CelesteAnalyzer" Version="*" />
@@ -33,11 +34,29 @@
         <Copy SourceFiles="$(OutputPath)\$(AssemblyName).pdb" DestinationFolder="..\bin" />
     </Target>
 
-    <Target Name="PackageMod" AfterTargets="CopyFiles" Inputs="$(ZippedFiles)" Outputs="..\Vidcutter.zip" Condition="'$(Configuration)' == 'Release'">
+    <Target Name="ReadVersion" AfterTargets="CopyFiles">
+        <ReadLinesFromFile File="..\everest.yaml">
+            <Output TaskParameter="Lines" ItemName="YamlLines"/>
+        </ReadLinesFromFile>
+        
+        <ItemGroup>
+            <VersionLine Include="@(YamlLines)"
+                        Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Identity)', 'Version:\s*\d+\.\d+\.\d+'))" />
+        </ItemGroup>
+
+        <PropertyGroup>
+            <FirstVersionLine>@(VersionLine->'%(Identity)', '|' )</FirstVersionLine>
+            <FirstVersionLine>$([System.String]::Copy('$(FirstVersionLine)').Split('|')[0])</FirstVersionLine>
+            <ModVersion>$([System.Text.RegularExpressions.Regex]::Match('$(FirstVersionLine)','Version:\s*(\d+\.\d+\.\d+)').Groups[1].Value)</ModVersion>
+            <SanitizedModVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(ModVersion)', '\.', '_'))</SanitizedModVersion>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="PackageMod" AfterTargets="ReadVersion" Inputs="$(ZippedFiles)" Outputs="..\Vidcutter_$(SanitizedModVersion).zip" Condition="'$(Configuration)' == 'Release'">
         <ItemGroup>
             <FilesToPackage Include="$(ZippedFiles)" />
         </ItemGroup>
-        <PackageMod Files="@(FilesToPackage)" OutputPath="..\Vidcutter.zip" />
+        <PackageMod Files="@(FilesToPackage)" OutputPath="..\Vidcutter_$(SanitizedModVersion).zip" />
     </Target>
     
     <PropertyGroup>
