@@ -176,12 +176,16 @@ public class VidcutterModule : EverestModule {
             Log($"ROOM PASSED", session: self.SceneAs<Level>().Session);
             processWhenClose = false;
         }
+
+        if (Settings.CutFromLastSaveState.Pressed) {
+            VideoCreation.ProcessLastLogFromState();
+        }
     }
 
     public static void onLoadState(Level level) {
         Vector2? playerPosition = level.Tracker.GetEntity<Player>()?.Position;
         if (playerPosition == level.Session.RespawnPoint) {
-            Log("DEATH", session: level.Session);
+            Log("STATE ON RESPAWN POINT", session: level.Session);
         } else {   
             Log("STATE", session: level.Session);
         }

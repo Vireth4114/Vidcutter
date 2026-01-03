@@ -61,10 +61,10 @@ public class VideoCreation {
         process.Start();
         string strDuration = process.StandardOutput.ReadToEnd();
         process.WaitForExit();
-        if (strDuration == "") {
-            return null;
+        if (!double.TryParse(strDuration, out double durationDouble) || durationDouble <= 0) {
+            return new[] { ".mkv", ".flv", ".ts" }.Contains(Path.GetExtension(video).ToLower()) ? File.GetLastWriteTime(video) - File.GetCreationTime(video) : null;
         }
-        TimeSpan duration = TimeSpan.FromSeconds(double.Parse(strDuration));
+        TimeSpan duration = TimeSpan.FromSeconds(durationDouble);
         VidcutterModule.writeCache(video, duration);
         return duration;
     }
@@ -136,7 +136,22 @@ public class VideoCreation {
     }
 
     public void ConcatAndClean(int videoCount) {
-        string videoName = videos[0].Level.Replace(" ", "");
+        string output = getOutputVideoName(videos[0].Level);
+        Logger.Info("Vidcutter", $"Concatenating {videoCount} videos into {output}");
+        Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", 
+                                        $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c:v copy -map 0 -y " +
+                                        $"\"{output}\"");
+        process.Start();
+        process.WaitForExit();
+
+        File.Delete("./Vidcutter/videos.txt");
+        for (int i = 1; i < videoCount; i++) {
+            File.Delete($"./Vidcutter/{i}.mp4");
+        }
+    }
+
+    public static string getOutputVideoName(string levelName) {
+        string videoName = levelName.Replace(" ", "");
         int outputNumber = 0;
         foreach (string file in Directory.GetFiles(VidcutterModule.Settings.VideoFolder)) {
             Regex regex = new Regex(@$".*\\Vidcutter_{videoName}_?(\d+)?\.mp4");
@@ -157,17 +172,7 @@ public class VideoCreation {
             output += $"_{outputNumber + 1}";
         }
         output += ".mp4";
-        Logger.Info("Vidcutter", $"Concatenating {videoCount} videos into {output}");
-        Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", 
-                                        $"-f concat -safe 0 -i ./Vidcutter/videos.txt -c:v copy -map 0 -y " +
-                                        $"\"{output}\"");
-        process.Start();
-        process.WaitForExit();
-
-        File.Delete("./Vidcutter/videos.txt");
-        for (int i = 1; i < videoCount; i++) {
-            File.Delete($"./Vidcutter/{i}.mp4");
-        }
+        return output;
     }
 
     public static List<LoggedString[]> ProcessLogs(string video) {
@@ -211,5 +216,57 @@ public class VideoCreation {
             }
         }
         return processed;
+    }
+
+    public static void ProcessLastLogFromState() {
+        if (!Directory.Exists(VidcutterModule.Settings.VideoFolder)) {
+            Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_VIDEO_FOLDER_NOT_FOUND"));
+            return;
+        }
+        string lastVideo = Directory.GetFiles(VidcutterModule.Settings.VideoFolder)
+            .OrderByDescending(f => File.GetLastWriteTime(f))
+            .FirstOrDefault();
+        if (lastVideo == null) {
+            Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_VIDEO_NOT_FOUND"));
+            return;
+        }
+        TimeSpan? duration = getVideoDuration(lastVideo);
+        if (duration == null) {
+            Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_NO_MATROSKA"));
+            return;
+        }
+        List<LoggedString> logs = VidcutterModule.getAllLogs(lastVideo);
+        LoggedString stateLog = logs.LastOrDefault(log => log.Event.Contains("STATE"));
+        if (stateLog == null) {
+            Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_STATE_NOT_FOUND"));
+            return;
+        }
+        LoggedString endLog = logs.LastOrDefault();
+        DateTime videoStartTime = File.GetCreationTime(lastVideo);
+        TimeSpan startTime = stateLog.Time + TimeSpan.FromSeconds(VidcutterModule.Settings.DelayStart) - videoStartTime;
+        float delay = VidcutterModule.Settings.DelayEnd;
+        TimeSpan endTime = endLog.Time + TimeSpan.FromSeconds(delay) - videoStartTime;
+        string ss = $"{startTime:hh\\:mm\\:ss\\.fff}";
+        string to = $"{endTime:hh\\:mm\\:ss\\.fff}";
+        string output = getOutputVideoName(stateLog.Level);
+        double clipDuration = (endTime - startTime).TotalSeconds;
+        TooltipWithProgress progress = TooltipWithProgress.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSING_VIDEO"));
+        Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", $"-ss {ss} -to {to} -i \"{lastVideo}\" -c:a copy -map 0 -vcodec libx264 " +
+                                $"-crf {VidcutterModule.Settings.CRF} -preset veryfast -y {output} -v warning -progress pipe:1");
+        process.OutputDataReceived += (sender, e) => {
+            if (e.Data?.StartsWith("out_time=") ?? false) {
+                string[] splitted = e.Data.Split('=');
+                if (TimeSpan.TryParse(splitted[1], out TimeSpan currentTime)) {
+                    progress.progress = (float) (currentTime.TotalSeconds / clipDuration);
+                }
+            }
+        };
+        process.EnableRaisingEvents = true;
+        process.Exited += (sender, e) => {
+            progress.progress = 1f;
+            Tooltip.Show(output + " " + Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSED_VIDEO"), 3f);
+        };
+        process.Start();
+        process.BeginOutputReadLine();
     }
 }
