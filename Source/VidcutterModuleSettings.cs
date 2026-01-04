@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using On.Celeste;
 using static Celeste.TextMenuExt;
 
@@ -86,4 +87,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
             }
         });
     }
+
+    [SettingName("MODOPTIONS_VIDCUTTER_CUTFROMLASTSAVESTATE")]
+    public ButtonBinding CutFromLastSaveState { get; set; }
 }
