@@ -54,6 +54,11 @@ public class VideoCreation {
     }
 
     public static TimeSpan? getVideoDuration(string video) {
+        return getVideoDuration(video, out _);
+    }
+
+    public static TimeSpan? getVideoDuration(string video, out bool isFinished) {
+        isFinished = true;
         if (VidcutterModule.DurationCache.ContainsKey(video)) {
             return VidcutterModule.DurationCache[video];
         }
@@ -62,7 +67,10 @@ public class VideoCreation {
         string strDuration = process.StandardOutput.ReadToEnd();
         process.WaitForExit();
         if (!double.TryParse(strDuration, out double durationDouble) || durationDouble <= 0) {
-            return new[] { ".mkv", ".flv", ".ts" }.Contains(Path.GetExtension(video).ToLower()) ? File.GetLastWriteTime(video) - File.GetCreationTime(video) : null;
+            isFinished = false;
+            return new[] { ".mkv", ".flv", ".ts" }.Contains(Path.GetExtension(video).ToLower())
+                ? File.GetLastWriteTime(video) - File.GetCreationTime(video) + TimeSpan.FromSeconds(3) // Give time to make sure end of video is good
+                : null;
         }
         TimeSpan duration = TimeSpan.FromSeconds(durationDouble);
         VidcutterModule.writeCache(video, duration);
@@ -230,7 +238,7 @@ public class VideoCreation {
             Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_VIDEO_NOT_FOUND"));
             return;
         }
-        TimeSpan? duration = getVideoDuration(lastVideo);
+        TimeSpan? duration = getVideoDuration(lastVideo, out bool isFinished);
         if (duration == null) {
             Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_NO_MATROSKA"));
             return;
@@ -242,6 +250,18 @@ public class VideoCreation {
             return;
         }
         LoggedString endLog = logs.LastOrDefault();
+        
+        TooltipWithProgress progress = TooltipWithProgress.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSING_VIDEO"));
+        
+        void process() => ProcessLastLogFromState(progress, lastVideo, stateLog, endLog);
+        if (!isFinished) {
+            progress.AddLoadingDelay(5f, process);
+        } else {
+            process();
+        }
+    }
+
+    public static void ProcessLastLogFromState(TooltipWithProgress progress, string lastVideo, LoggedString stateLog, LoggedString endLog) {
         DateTime videoStartTime = File.GetCreationTime(lastVideo);
         TimeSpan startTime = stateLog.Time + TimeSpan.FromSeconds(VidcutterModule.Settings.DelayStart) - videoStartTime;
         float delay = VidcutterModule.Settings.DelayEnd;
@@ -250,7 +270,6 @@ public class VideoCreation {
         string to = $"{endTime:hh\\:mm\\:ss\\.fff}";
         string output = getOutputVideoName(stateLog.Level);
         double clipDuration = (endTime - startTime).TotalSeconds;
-        TooltipWithProgress progress = TooltipWithProgress.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSING_VIDEO"));
         Process process = createProcess($"{VidcutterModule.Settings.FFmpegPath}ffmpeg", $"-ss {ss} -to {to} -i \"{lastVideo}\" -c:a copy -map 0 -vcodec libx264 " +
                                 $"-crf {VidcutterModule.Settings.CRF} -preset veryfast -y {output} -v warning -progress pipe:1");
         process.OutputDataReceived += (sender, e) => {
