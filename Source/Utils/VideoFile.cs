@@ -1,22 +1,28 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
 public class VideoFile {
 
-    private string filePath = "";
+    private readonly string filePath = "";
     private string fileName = "";
+    private string extension = "";
     private DateTime? creationTime = null;
     private TimeSpan? videoDuration = null;
 
     public VideoFile(string filePath)
     {
         if (!File.Exists(filePath)) {
-            Logger.Error("Vidcutter", $"Tried to access a file that doesn't exist, path given: {filePath}");
             throw new InvalidOperationException($"The file path {filePath} leads to a non-existing file. Please report this issue.");
         }
         this.filePath = filePath;
+        if (string.IsNullOrEmpty(Path.GetExtension(filePath))) {
+            throw new InvalidDataException($"Could not determine the file extension. Please report this issue.");
+        }
+        extension = Path.GetExtension(filePath)[..1].ToLower();
     }
 
     public override string ToString() {
@@ -37,7 +43,15 @@ public class VideoFile {
         if (creationTime.HasValue) return (DateTime)creationTime;
         creationTime = File.GetCreationTime(filePath);
         if (OperatingSystem.IsWindows()) return (DateTime)creationTime;
-        creationTime -= GetVideoDuration();
+        Process process = VideoCreation.createProcess("stat",  $"-c '%w' \"{filePath}\"");
+        process.Start();
+        string strDate = process.StandardOutput.ReadToEnd();
+        string error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        if (!DateTime.TryParse(strDate, out DateTime parsedCreationTime)) {
+            throw new InvalidDataException($"{error}");
+        }
+        creationTime = parsedCreationTime;
         return (DateTime)creationTime;
     }
 
@@ -45,11 +59,20 @@ public class VideoFile {
         if (videoDuration.HasValue) return (TimeSpan)videoDuration;
         videoDuration = VideoCreation.getVideoDuration(filePath);
         if (!videoDuration.HasValue) {
-            Logger.Error("Vidcutter", $"Couldn't get the video duration for the video located at {filePath}");
             throw new InvalidDataException(
                 $"The duration for the video located at {filePath} couldn't be obtained. Please report this issue."
             );
         }
         return (TimeSpan)videoDuration;
+    }
+
+    public bool IsValidForClipping() {
+        List<string> validFormats = ["mkv", "ts", "flv"];
+        return validFormats.Contains(extension);
+    }
+
+    public bool IsFinished() {
+        VideoCreation.getVideoDuration(filePath, out bool isFinished);
+        return isFinished;
     }
 }

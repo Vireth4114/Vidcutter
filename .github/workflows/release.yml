@@ -1,0 +1,46 @@
+name: Build & Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+
+      - name: Get version and zip name
+        id: version
+        run: |
+          VERSION=$(grep -oP '(?<=Version: )[\d.]+' everest.yaml | head -n 1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "zip_path=Vidcutter_${VERSION//./_}.zip" >> $GITHUB_OUTPUT
+
+      - name: Create Tag
+        id: tag
+        run: |
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+          echo "tag=v${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: ${{ steps.version.outputs.zip_path }}

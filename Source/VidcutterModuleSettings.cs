@@ -83,4 +83,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
             }
         });
     }
+
+    [SettingName("MODOPTIONS_VIDCUTTER_CUTFROMLASTSAVESTATE")]
+    public ButtonBinding CutFromLastSaveState { get; set; }
 }
