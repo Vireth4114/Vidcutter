@@ -1,18 +1,11 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks.Dataflow;
-using Celeste.Mod.Helpers;
 using Celeste.Mod.Vidcutter;
+using Celeste.Mod.Vidcutter.Utils;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Media;
 using Monocle;
 using static Celeste.TextMenu;
-using static Celeste.TextMenuExt;
 
 namespace Celeste.Mod.UI;
 
@@ -41,7 +34,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
 
         VideoCreation vc = new VideoCreation(crf: VidcutterModule.Settings.CRF);
         int id = 0;
-        foreach (string video in vc.GetAllVideos()) {
+        foreach (VideoFile video in VideoCreation.GetAllVideos()) {
             List<string> levels = new List<string>();
             List<LoggedString[]> listLogs = VideoCreation.ProcessLogs(video);
             Dictionary<string, LoggedString> lastLogLevel = new Dictionary<string, LoggedString>();
@@ -51,7 +44,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
                 }
                 lastLogLevel[logs[1].Level] = logs[1];
             }
-            Logger.Info("Vidcutter", $"Video {video} has {levels.Count} levels and {listLogs.Count} clips");
+            Logger.Info("Vidcutter", $"Video {video.GetFileName()} has {levels.Count} levels and {listLogs.Count} clips");
             foreach (string level in levels) {
                 string whatHappened;
                 LoggedString lastLog = lastLogLevel[level];
@@ -60,9 +53,8 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
                 } else {
                     whatHappened = Dialog.Clean("VIDCUTTER_LEVEL_UNTIL") + $" {lastLog.Room}";
                 }
-                string videoName = video.Substring(video.LastIndexOf('\\') + 1);
                 string rowName = $"{level} ({whatHappened})";
-                rowInfos.Add($"{videoName} | {level}");
+                rowInfos.Add($"{video.GetFileName()} | {level}");
                 int finalId = id;
                 CustomButton button = new CustomButton("", rowName) {
                     OnPressed = () => {
@@ -85,7 +77,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
                     },
                 };
                 menu.Add(button);
-                CustomEaseIn videoLabel = new CustomEaseIn(videoName, false, menu) {
+                CustomEaseIn videoLabel = new CustomEaseIn(video.GetFileName(), false, menu) {
                     TextColor = Color.Gray,
                     HeightExtra = 0f,
                     FadeVisible = finalId == 0
@@ -159,7 +151,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
                     string[] splitted = rowInfos[i].Split(" | ");
                     rowsToDelete.Add(new ProcessedVideo(splitted[0], splitted[1]));
                 }
-                VidcutterModule.deleteLogs(rowsToDelete);
+                LogManager.deleteLogs(rowsToDelete);
                 OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
             },
             Disabled = true

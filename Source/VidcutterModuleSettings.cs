@@ -4,10 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Celeste.Mod.UI;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
-using On.Celeste;
-using static Celeste.TextMenuExt;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -65,7 +61,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
         }
         menu.Add(new TextMenu.Button(Dialog.Clean("MODOPTIONS_VIDCUTTER_CUTVIDEOS")) {
             OnPressed = () => {
-            OuiLoggedProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
+                OuiLoggedProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
                 if (!Directory.Exists("./VidCutter/ffmpeg/ffmpeg")) {
                     try {
                         // Check for FFmpeg in PATH
@@ -81,7 +77,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
                         FFmpegPath = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-7.1-essentials_build", "bin") + "/";
                     }
                 } else {
-                    FFmpegPath = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-7.1-essentials_build", "bin") + "/";
+                    FFmpegPath = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-master-latest-linux64-gpl", "bin") + "/";
                     OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
                 }
             }
