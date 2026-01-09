@@ -176,10 +176,13 @@ public class VidcutterModule : EverestModule {
             Log($"ROOM PASSED", session: self.SceneAs<Level>().Session);
             processWhenClose = false;
         }
+    }
 
+    public static void OnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
         if (Settings.CutFromLastSaveState.Pressed) {
             VideoCreation.ProcessLastLogFromState();
         }
+        orig(self, gameTime);
     }
 
     public static void onLoadState(Level level) {
@@ -259,6 +262,7 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Level.Begin += OnBegin;
         On.Celeste.Level.LoadLevel += OnDeath;
         On.Celeste.Player.Update += onPlayerUpdate;
+        On.Monocle.Engine.Update += OnUpdate;
         On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
         On.Celeste.Cassette.CollectRoutine += OnCollectCassette;
         On.Celeste.LevelExit.ctor += OnRestart;
@@ -337,6 +341,7 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Level.Begin -= OnBegin;
         On.Celeste.Level.LoadLevel -= OnDeath;
         On.Celeste.Player.Update -= onPlayerUpdate;
+        On.Monocle.Engine.Update -= OnUpdate;
         On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
         On.Celeste.Cassette.CollectRoutine -= OnCollectCassette;
         On.Celeste.LevelExit.ctor -= OnRestart;
