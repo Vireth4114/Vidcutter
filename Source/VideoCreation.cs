@@ -162,8 +162,9 @@ public class VideoCreation {
         string videoName = levelName.Replace(" ", "");
         int outputNumber = 0;
         foreach (string file in Directory.GetFiles(VidcutterModule.Settings.VideoFolder)) {
-            Regex regex = new Regex(@$".*\\Vidcutter_{videoName}_?(\d+)?\.mp4");
+            Regex regex = new Regex(@$".*\\Vidcutter_{Regex.Escape(videoName)}_?(\d+)?\.mp4");
             Match match = regex.Match(file);
+            Logger.Info("Vidcutter", $"Checking existing file {file} against pattern {regex}: Match success: {match.Success}");
             if (match.Success) {
                 if (match.Groups.Count > 1 && match.Groups[1].Success) {
                     outputNumber = Math.Max(int.Parse(match.Groups[1].Value), outputNumber);
