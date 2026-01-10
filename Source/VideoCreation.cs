@@ -204,7 +204,7 @@ public class VideoCreation {
                 processed.Clear();
             }
             
-            if (!currentLine.isCleared() || previousLine?.Event == "STATE") {
+            if (!currentLine.isCleared() || !currentLine.CountTowardsClear) {
                 currentClip.Clear();
                 continue;
             }

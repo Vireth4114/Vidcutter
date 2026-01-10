@@ -1,5 +1,5 @@
 - Name: Vidcutter
-  Version: 1.9.3
+  Version: 1.10.0
   DLL: bin/Vidcutter.dll
   Dependencies:
     - Name: EverestCore
