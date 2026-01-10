@@ -116,7 +116,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     public Button getProcessButton(VideoCreation vc) {
         Button button = new Button(Dialog.Clean("VIDCUTTER_PROCESS")) {
             OnPressed = () => {
-                vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
+                vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiVidcutterProgress>();
                 foreach (int i in toProcess) {
                     string[] splitted = rowInfos[i].Split(" | ");
                     vc.videos.Add(new ProcessedVideo(splitted[0], splitted[1]));
@@ -134,7 +134,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     public Button getProcessAndDeleteButton(VideoCreation vc) {
         Button button = new Button(Dialog.Clean("VIDCUTTER_PROCESS_AND_DELETE")) {
             OnPressed = () => {
-                vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiLoggedProgress>();
+                vc.progress = OuiModOptions.Instance.Overworld.Goto<OuiVidcutterProgress>();
                 List<ProcessedVideo> rowsToDelete = new List<ProcessedVideo>();
                 foreach (int i in toProcess) {
                     string[] splitted = rowInfos[i].Split(" | ");

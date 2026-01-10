@@ -12,8 +12,8 @@ namespace Celeste.Mod.Vidcutter;
 public class VideoCreation {
     public int crf;
     public List<ProcessedVideo> videos = new List<ProcessedVideo>();
-    public OuiLoggedProgress progress;
-    public VideoCreation(OuiLoggedProgress progress = null, int crf = 27) {
+    public OuiVidcutterProgress progress;
+    public VideoCreation(OuiVidcutterProgress progress = null, int crf = 27) {
         this.progress = progress;
         this.crf = crf;
     }
