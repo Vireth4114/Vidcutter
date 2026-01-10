@@ -70,7 +70,7 @@ public class VidcutterModule : EverestModule {
             }
             toLog += $" | {session.Level} | ";
         }
-        toLog += message;
+        toLog += message + $" | {!inState}";
         LogFileWriter.WriteLine(toLog);
     }
 
@@ -103,8 +103,7 @@ public class VidcutterModule : EverestModule {
                 condition &= loggedEvent[0] == level;
             }
             if (condition) {
-                parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1]));
-            }
+                parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1], loggedEvent.ElementAtOrDefault(3)));        }
         }
 
         LogFileWriter = new StreamWriter(logPath, true) {
@@ -123,31 +122,29 @@ public class VidcutterModule : EverestModule {
 
     public static void OnDeath(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
         if (playerIntro == Player.IntroTypes.Respawn) {
+            inState = false;
             Log("DEATH", session: self.Session);
             processWhenClose = false;
-            inState = false;
         }
         orig(self, playerIntro, isFromLoader);
     }
 
     public static void OnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
-        Log("LEVEL LOADED", session: self.Session);
         inState = false;
+        Log("LEVEL LOADED", session: self.Session);
         orig(self);
     }
 
     public static void OnCollectStrawberry(On.Celeste.Strawberry.orig_OnCollect orig, Strawberry self) {
-        if (!inState) {
-            Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
-        }
+        Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
         orig(self);
     }
 
-    public static IEnumerator OnCollectCassette(On.Celeste.Cassette.orig_CollectRoutine orig, Cassette self, Player player) {
-        yield return new SwapImmediately(orig(self, player));
-        if (!inState) {
-            Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
-        }
+    public static void OnCollectCassette(On.Celeste.Cassette.orig_OnPlayer orig, Cassette self, Player player) {
+        if (!self.collected)
+            Log("CASSETTE", session: self.SceneAs<Level>().Session);
+        orig(self, player);
+
     }
 
     public static void OnRestart(On.Celeste.LevelExit.orig_ctor orig, LevelExit self, LevelExit.Mode mode, Session session, HiresSnow snow) {
@@ -172,7 +169,7 @@ public class VidcutterModule : EverestModule {
         float deltaY = Math.Abs(playerPos.Y - respawnPoint.Value.Y);
         float deltaX = Math.Abs(playerPos.X - respawnPoint.Value.X);
         double distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (distance <= 50 && processWhenClose && !inState) {
+        if (distance <= 50 && processWhenClose) {
             Log($"ROOM PASSED", session: self.SceneAs<Level>().Session);
             processWhenClose = false;
         }
@@ -191,10 +188,10 @@ public class VidcutterModule : EverestModule {
             Log("STATE ON RESPAWN POINT", session: level.Session);
         } else {   
             Log("STATE", session: level.Session);
+            inState = true;
         }
         processWhenClose = false;
         previousRespawnPoint = level.Session.RespawnPoint;
-        inState = true;
     }
 
     public static Level ModifyRoomToRespawnTo_Hook(Func<Level, Level> orig, Level level) {
@@ -264,7 +261,7 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Player.Update += onPlayerUpdate;
         On.Monocle.Engine.Update += OnUpdate;
         On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
-        On.Celeste.Cassette.CollectRoutine += OnCollectCassette;
+        On.Celeste.Cassette.OnPlayer += OnCollectCassette;
         On.Celeste.LevelExit.ctor += OnRestart;
         typeof(VidcutterSpeedrunToolImport).ModInterop();
         SpeedrunToolInstalled = VidcutterSpeedrunToolImport.IgnoreSaveState is not null;
@@ -343,7 +340,7 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Player.Update -= onPlayerUpdate;
         On.Monocle.Engine.Update -= OnUpdate;
         On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
-        On.Celeste.Cassette.CollectRoutine -= OnCollectCassette;
+        On.Celeste.Cassette.OnPlayer -= OnCollectCassette;
         On.Celeste.LevelExit.ctor -= OnRestart;
         if (SpeedrunToolInstalled) {
             VidcutterSpeedrunToolImport.Unregister(action);
