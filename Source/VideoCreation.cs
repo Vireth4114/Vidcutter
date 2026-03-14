@@ -12,8 +12,8 @@ namespace Celeste.Mod.Vidcutter;
 public class VideoCreation {
     public int crf;
     public List<ProcessedVideo> videos = [];
-    public OuiLoggedProgress progress;
-    public VideoCreation(OuiLoggedProgress progress = null, int crf = 27) {
+    public OuiVidcutterProgress progress;
+    public VideoCreation(OuiVidcutterProgress progress = null, int crf = 27) {
         this.progress = progress;
         this.crf = crf;
     }
@@ -162,8 +162,9 @@ public class VideoCreation {
         string videoName = levelName.Replace(" ", "");
         int outputNumber = 0;
         foreach (string file in Directory.GetFiles(VidcutterModule.Settings.VideoFolder)) {
-            Regex regex = new Regex(@$".*\\Vidcutter_{videoName}_?(\d+)?\.mp4");
+            Regex regex = new Regex(@$".*\\Vidcutter_{Regex.Escape(videoName)}_?(\d+)?\.mp4");
             Match match = regex.Match(file);
+            Logger.Info("Vidcutter", $"Checking existing file {file} against pattern {regex}: Match success: {match.Success}");
             if (match.Success) {
                 if (match.Groups.Count > 1 && match.Groups[1].Success) {
                     outputNumber = Math.Max(int.Parse(match.Groups[1].Value), outputNumber);
@@ -203,7 +204,7 @@ public class VideoCreation {
                 processed.Clear();
             }
             
-            if (!currentLine.isCleared() || previousLine?.Event == "STATE") {
+            if (!currentLine.isCleared() || !currentLine.CountTowardsClear) {
                 currentClip.Clear();
                 continue;
             }

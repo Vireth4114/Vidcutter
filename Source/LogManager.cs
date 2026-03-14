@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Celeste.Mod.Vidcutter.Utils;
 
 namespace Celeste.Mod.Vidcutter;
@@ -8,6 +9,7 @@ namespace Celeste.Mod.Vidcutter;
 class LogManager {
     public static string logPath;
     public static StreamWriter LogFileWriter = null;
+    public static bool inState = false;
 
     public static void Log(string message, Session session = null) {
         string toLog = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] ";
@@ -25,7 +27,7 @@ class LogManager {
             }
             toLog += $" | {session.Level} | ";
         }
-        toLog += message;
+        toLog += message + $" | {!inState}";
         LogFileWriter.WriteLine(toLog);
     }
 
@@ -55,7 +57,7 @@ class LogManager {
                 condition &= loggedEvent[0] == level;
             }
             if (condition) {
-                parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1]));
+                parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1], loggedEvent.ElementAtOrDefault(3)));
             }
         }
 

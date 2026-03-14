@@ -7,15 +7,17 @@ public class LoggedString {
     public string Event;
     public string Level;
     public string Room;
-    public LoggedString(DateTime time, string _event, string level, string room){
+    public bool CountTowardsClear;
+    public LoggedString(DateTime time, string _event, string level, string room, string countTowardsClear) {
         Time = time;
         Event = _event;
         Level = level;
         Room = room;
+        CountTowardsClear = countTowardsClear == null || bool.Parse(countTowardsClear);
     }
 
     public bool isCleared() {
-        string[] clearedEvents = {"ROOM PASSED", "LEVEL COMPLETE"};
+        string[] clearedEvents = {"ROOM PASSED", "LEVEL COMPLETE", "CASSETTE", "BERRY", "CLOSE TO SPAWNPOINT"};
         return clearedEvents.Contains(Event);
     }
 

@@ -35,8 +35,8 @@ jobs:
       - name: Create Tag
         id: tag
         run: |
-          git tag "v${{ steps.version.outputs.version }}"
-          git push origin "v${{ steps.version.outputs.version }}"
+          git tag -f "v${{ steps.version.outputs.version }}"
+          git push -f origin "v${{ steps.version.outputs.version }}"
           echo "tag=v${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release

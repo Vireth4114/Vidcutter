@@ -34,7 +34,6 @@ public class VidcutterModule : EverestModule {
     public static Vector2? previousRespawnPoint = null;
     public static bool processWhenClose = false;
     private static bool SpeedrunToolInstalled = false;
-    private static bool inState = false;
     private static object action;
     private static EverestModule vivHelperModule;
     private static Hook vivHelperRespawnHook;
@@ -56,31 +55,28 @@ public class VidcutterModule : EverestModule {
 
     public static void OnDeath(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
         if (playerIntro == Player.IntroTypes.Respawn) {
+            LogManager.inState = false;
             LogManager.Log("DEATH", session: self.Session);
             processWhenClose = false;
-            inState = false;
         }
         orig(self, playerIntro, isFromLoader);
     }
 
     public static void OnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
+        LogManager.inState = false;
         LogManager.Log("LEVEL LOADED", session: self.Session);
-        inState = false;
         orig(self);
     }
 
     public static void OnCollectStrawberry(On.Celeste.Strawberry.orig_OnCollect orig, Strawberry self) {
-        if (!inState) {
-            LogManager.Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
-        }
+        LogManager.Log("BERRY", session: self.SceneAs<Level>().Session);
         orig(self);
     }
 
-    public static IEnumerator OnCollectCassette(On.Celeste.Cassette.orig_CollectRoutine orig, Cassette self, Player player) {
-        yield return new SwapImmediately(orig(self, player));
-        if (!inState) {
-            LogManager.Log("ROOM PASSED", session: self.SceneAs<Level>().Session);
-        }
+    public static void OnCollectCassette(On.Celeste.Cassette.orig_OnPlayer orig, Cassette self, Player player) {
+        if (!self.collected)
+            LogManager.Log("CASSETTE", session: self.SceneAs<Level>().Session);
+        orig(self, player);
     }
 
     public static void OnRestart(On.Celeste.LevelExit.orig_ctor orig, LevelExit self, LevelExit.Mode mode, Session session, HiresSnow snow) {
@@ -105,14 +101,17 @@ public class VidcutterModule : EverestModule {
         float deltaY = Math.Abs(playerPos.Y - respawnPoint.Value.Y);
         float deltaX = Math.Abs(playerPos.X - respawnPoint.Value.X);
         double distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (distance <= 50 && processWhenClose && !inState) {
-            LogManager.Log($"ROOM PASSED", session: self.SceneAs<Level>().Session);
+        if (distance <= 50 && processWhenClose) {
+            LogManager.Log($"CLOSE TO SPAWNPOINT", session: self.SceneAs<Level>().Session);
             processWhenClose = false;
         }
+    }
 
+    public static void OnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
         if (Settings.CutFromLastSaveState.Pressed) {
             VideoCreation.ProcessLastLogFromState();
         }
+        orig(self, gameTime);
     }
 
     public static void onLoadState(Level level) {
@@ -121,10 +120,10 @@ public class VidcutterModule : EverestModule {
             LogManager.Log("STATE ON RESPAWN POINT", session: level.Session);
         } else {   
             LogManager.Log("STATE", session: level.Session);
+            LogManager.inState = true;
         }
         processWhenClose = false;
         previousRespawnPoint = level.Session.RespawnPoint;
-        inState = true;
     }
 
     public static Level ModifyRoomToRespawnTo_Hook(Func<Level, Level> orig, Level level) {
@@ -138,7 +137,7 @@ public class VidcutterModule : EverestModule {
         return returnValue;
     }
 
-    public static bool InstallFFmpeg(OuiLoggedProgress progress) {
+    public static bool InstallFFmpeg(OuiVidcutterProgress progress) {
         string DownloadURL = "https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip";
         string DownloadFolder = Path.Combine("./VidCutter/", "ffmpeg");
         if (!Directory.Exists(DownloadFolder)) {
@@ -192,8 +191,9 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Level.Begin += OnBegin;
         On.Celeste.Level.LoadLevel += OnDeath;
         On.Celeste.Player.Update += onPlayerUpdate;
+        On.Monocle.Engine.Update += OnUpdate;
         On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
-        On.Celeste.Cassette.CollectRoutine += OnCollectCassette;
+        On.Celeste.Cassette.OnPlayer += OnCollectCassette;
         On.Celeste.LevelExit.ctor += OnRestart;
         typeof(VidcutterSpeedrunToolImport).ModInterop();
         SpeedrunToolInstalled = VidcutterSpeedrunToolImport.IgnoreSaveState is not null;
@@ -270,8 +270,9 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Level.Begin -= OnBegin;
         On.Celeste.Level.LoadLevel -= OnDeath;
         On.Celeste.Player.Update -= onPlayerUpdate;
+        On.Monocle.Engine.Update -= OnUpdate;
         On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
-        On.Celeste.Cassette.CollectRoutine -= OnCollectCassette;
+        On.Celeste.Cassette.OnPlayer -= OnCollectCassette;
         On.Celeste.LevelExit.ctor -= OnRestart;
         if (SpeedrunToolInstalled) {
             VidcutterSpeedrunToolImport.Unregister(action);
