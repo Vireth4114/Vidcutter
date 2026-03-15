@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Threading.Tasks;
 using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
 using Monocle; 
@@ -137,7 +138,14 @@ public class VidcutterModule : EverestModule {
         return returnValue;
     }
 
-    public static bool InstallFFmpeg(OuiVidcutterProgress progress) {
+    public static void InstallFFmpeg() {
+        OuiVidcutterProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiVidcutterProgress>();
+        progress.Init<OuiModOptions>(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"), new Task(() => {
+            InternalInstallFFmpeg(progress);
+        }), 0);
+    }
+
+    private static bool InternalInstallFFmpeg(OuiVidcutterProgress progress) {
         string DownloadURL = "https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip";
         string DownloadFolder = Path.Combine("./VidCutter/", "ffmpeg");
         if (!Directory.Exists(DownloadFolder)) {
