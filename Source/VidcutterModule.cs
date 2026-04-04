@@ -140,9 +140,11 @@ public class VidcutterModule : EverestModule {
 
     public static void InstallFFmpeg() {
         OuiVidcutterProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiVidcutterProgress>();
-        progress.Init<OuiModOptions>(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"), new Task(() => {
+        Task installFFmpeg = new Task(() => {
             InternalInstallFFmpeg(progress);
-        }), 0);
+        });
+        progress.Init<OuiModOptions>(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"), installFFmpeg, 0);
+        installFFmpeg.Wait();
     }
 
     private static bool InternalInstallFFmpeg(OuiVidcutterProgress progress) {

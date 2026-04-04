@@ -32,11 +32,7 @@ class LogManager {
     }
 
     public static List<LoggedString> GetAllLogs(VideoFile video, string level = null) {
-        DateTime startVideo = video.GetCreationTime();
-        TimeSpan duration = video.GetVideoDuration();
-        Logger.Info("Vidcutter", video.ToString());
-        DateTime endVideo = startVideo + duration;
-        return GetAllLogs(startVideo, endVideo, level);
+        return GetAllLogs(video.GetCreationTime(), video.GetEndTime(), level);
     }
 
     public static List<LoggedString> GetAllLogs(DateTime? startVideo = null, DateTime? endVideo = null, string level = null) {
@@ -70,14 +66,10 @@ class LogManager {
     public static void deleteLogs(List<ProcessedVideo> rows){
         List<LoggedString> allLogs = GetAllLogs();
         foreach (ProcessedVideo row in rows) {
-            string video = Path.Combine(VidcutterModule.Settings.VideoFolder, row.Video);
+            VideoFile video = new VideoFile(Path.Combine(VidcutterModule.Settings.VideoFolder, row.Video));
             string level = row.Level;
-            DateTime startVideo = File.GetCreationTime(video);
-            TimeSpan? duration = VideoCreation.getVideoDuration(video);
-            if (duration == null) {
-                return;
-            }
-            DateTime endVideo = startVideo + (TimeSpan)duration;
+            DateTime startVideo = video.GetCreationTime();
+            DateTime endVideo = video.GetEndTime();
             List<LoggedString> allLogsCopy = [.. allLogs];
             foreach (LoggedString log in allLogsCopy) {
                 if (startVideo < log.Time && log.Time < endVideo && log.Level == level) {

@@ -32,7 +32,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         rowInfos.Clear();
         toProcess.Clear();
 
-        VideoCreation vc = new VideoCreation(crf: VidcutterModule.Settings.CRF);
+        VideoCreation vc = new VideoCreation();
         int id = 0;
         foreach (VideoFile video in VideoCreation.GetAllVideos()) {
             List<string> levels = new List<string>();

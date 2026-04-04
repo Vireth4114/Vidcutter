@@ -7,10 +7,10 @@ namespace Celeste.Mod.Vidcutter.Utils;
 
 public static class FFmpegUtils {
     private static string _ffmpegDirectory;
-    private static bool _initialized;
+    private static bool _initialized = false;
 
     public static void Initialize() {
-        if (!_initialized) return;
+        if (_initialized) return;
         
         if (IsFFmpegInPath()) {
             _ffmpegDirectory = "";
@@ -22,7 +22,7 @@ public static class FFmpegUtils {
             VidcutterModule.InstallFFmpeg();
         }
         
-        _ffmpegDirectory = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-master-latest-linux64-gpl", "bin") + "/";
+        _ffmpegDirectory = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-7.1-essentials_build", "bin") + "/";
         _initialized = true;
     }
 
@@ -52,12 +52,12 @@ public static class FFmpegUtils {
     }
     
     private static Process FFmpeg(string arguments) {
-        if (_initialized) Initialize();
+        if (!_initialized) Initialize();
         return CreateProcess($"{_ffmpegDirectory}ffmpeg", arguments);
     }
     
     private static Process FFprobe(string arguments) {
-        if (_initialized) Initialize();
+        if (!_initialized) Initialize();
         return CreateProcess($"{_ffmpegDirectory}ffprobe", arguments);
     }
 
