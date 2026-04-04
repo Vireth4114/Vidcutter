@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Linq;
-using System.Reflection.PortableExecutable;
 using Microsoft.Xna.Framework;
 using Monocle;
 
