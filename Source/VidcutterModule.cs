@@ -46,6 +46,7 @@ public class VidcutterModule : EverestModule {
     private static object action;
     private static EverestModule vivHelperModule;
     private static Hook vivHelperRespawnHook;
+    private static Hook keyOnPlayerHook;
 
     public static Dictionary<string, TimeSpan> DurationCache = null;
 
@@ -151,6 +152,22 @@ public class VidcutterModule : EverestModule {
             Log("RESTART CHAPTER", session: session);
         }
         orig(self, mode, session, snow);
+    }
+
+    public static void OnCollectHeartGem(On.Celeste.HeartGem.orig_Collect orig, HeartGem self, Player player) {
+        Log("HEART", session: self.SceneAs<Level>().Session);
+        orig(self, player);
+    }
+
+    public static void OnCollectKey(Action<Key, Player> orig, Key self, Player player) {
+        if (self.Collidable)
+            Log("KEY", session: self.SceneAs<Level>().Session);
+        orig(self, player);
+    }
+
+    public static IEnumerator OnCollectSummitGem(On.Celeste.SummitGem.orig_SmashRoutine orig, SummitGem self, Player player, Level level) {
+        Log("SUMMIT_GEM", session: level.Session);
+        return orig(self, player, level);
     }
 
     public static void onPlayerUpdate(On.Celeste.Player.orig_Update orig, Player self) {
@@ -262,6 +279,13 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
         On.Celeste.Cassette.OnPlayer += OnCollectCassette;
         On.Celeste.LevelExit.ctor += OnRestart;
+        On.Celeste.HeartGem.Collect += OnCollectHeartGem;
+
+        MethodInfo keyOnPlayerMethod = typeof(Key).GetMethod("OnPlayer", BindingFlags.NonPublic | BindingFlags.Instance);
+        keyOnPlayerHook = new Hook(keyOnPlayerMethod, typeof(VidcutterModule).GetMethod(nameof(OnCollectKey), BindingFlags.Public | BindingFlags.Static));
+
+        On.Celeste.SummitGem.SmashRoutine += OnCollectSummitGem;
+
         typeof(VidcutterSpeedrunToolImport).ModInterop();
         SpeedrunToolInstalled = VidcutterSpeedrunToolImport.IgnoreSaveState is not null;
         if (SpeedrunToolInstalled) {
@@ -341,6 +365,10 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
         On.Celeste.Cassette.OnPlayer -= OnCollectCassette;
         On.Celeste.LevelExit.ctor -= OnRestart;
+        On.Celeste.HeartGem.Collect -= OnCollectHeartGem;
+        keyOnPlayerHook?.Dispose();
+        keyOnPlayerHook = null;
+        On.Celeste.SummitGem.SmashRoutine -= OnCollectSummitGem;
         if (SpeedrunToolInstalled) {
             VidcutterSpeedrunToolImport.Unregister(action);
         }
