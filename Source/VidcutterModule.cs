@@ -46,7 +46,6 @@ public class VidcutterModule : EverestModule {
     private static object action;
     private static EverestModule vivHelperModule;
     private static Hook vivHelperRespawnHook;
-    private static Hook keyOnPlayerHook;
 
     public static Dictionary<string, TimeSpan> DurationCache = null;
 
@@ -159,8 +158,8 @@ public class VidcutterModule : EverestModule {
         orig(self, player);
     }
 
-    public static void OnCollectKey(Action<Key, Player> orig, Key self, Player player) {
-        if (self.Collidable)
+    public static void OnCollectKey(On.Celeste.Key.orig_OnPlayer orig, Key self, Player player) {
+        if (self.GetType() == typeof(Key) && self.Collidable)
             Log("KEY", session: self.SceneAs<Level>().Session);
         orig(self, player);
     }
@@ -280,10 +279,7 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Cassette.OnPlayer += OnCollectCassette;
         On.Celeste.LevelExit.ctor += OnRestart;
         On.Celeste.HeartGem.Collect += OnCollectHeartGem;
-
-        MethodInfo keyOnPlayerMethod = typeof(Key).GetMethod("OnPlayer", BindingFlags.NonPublic | BindingFlags.Instance);
-        keyOnPlayerHook = new Hook(keyOnPlayerMethod, typeof(VidcutterModule).GetMethod(nameof(OnCollectKey), BindingFlags.Public | BindingFlags.Static));
-
+        On.Celeste.Key.OnPlayer += OnCollectKey;
         On.Celeste.SummitGem.SmashRoutine += OnCollectSummitGem;
 
         typeof(VidcutterSpeedrunToolImport).ModInterop();
@@ -366,8 +362,7 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Cassette.OnPlayer -= OnCollectCassette;
         On.Celeste.LevelExit.ctor -= OnRestart;
         On.Celeste.HeartGem.Collect -= OnCollectHeartGem;
-        keyOnPlayerHook?.Dispose();
-        keyOnPlayerHook = null;
+        On.Celeste.Key.OnPlayer -= OnCollectKey;
         On.Celeste.SummitGem.SmashRoutine -= OnCollectSummitGem;
         if (SpeedrunToolInstalled) {
             VidcutterSpeedrunToolImport.Unregister(action);
