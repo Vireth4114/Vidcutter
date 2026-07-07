@@ -17,7 +17,7 @@ public class LoggedString {
     }
 
     public bool isCleared() {
-        string[] clearedEvents = {"ROOM PASSED", "LEVEL COMPLETE", "CASSETTE", "BERRY", "CLOSE TO SPAWNPOINT"};
+        string[] clearedEvents = {"ROOM PASSED", "LEVEL COMPLETE", "CASSETTE", "BERRY", "CLOSE TO SPAWNPOINT", "HEART", "KEY", "SUMMIT_GEM"};
         return clearedEvents.Contains(Event);
     }
 
