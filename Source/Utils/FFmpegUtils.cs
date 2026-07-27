@@ -9,56 +9,75 @@ public static class FFmpegUtils {
     private static string _ffmpegDirectory;
     private static bool _initialized;
 
-    public static void Initialize() {
-        if (!_initialized) return;
+    /**
+     * Initialize FFmpeg, installing it locally if it's not in the path
+     *
+     * @return true if no installation has to be done
+     */
+    public static bool Initialize() {
+        if (_initialized) return true;
         
         if (IsFFmpegInPath()) {
             _ffmpegDirectory = "";
             _initialized = true;
-            return;
+            return true;
         }
+
+        string ffmpegBaseDir = Path.Combine("./VidCutter", "ffmpeg");
+        bool isInstalling = false;
         
-        if (!Directory.Exists(Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg"))) {
+        if (!Directory.Exists(ffmpegBaseDir)) {
+            isInstalling = true;
             VidcutterModule.InstallFFmpeg();
         }
-        
-        _ffmpegDirectory = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-master-latest-linux64-gpl", "bin") + "/";
+
+        _ffmpegDirectory = Path.Combine(ffmpegBaseDir, "bin") + "/";
         _initialized = true;
+        return !isInstalling;
+    }
+    
+    public static void InstallFFmpeg(OuiVidcutterProgress progress = null) {
+        const string downloadFolder = "./VidCutter/"; //TODO à externaliser
+
+        string fileName = OperatingSystem.IsWindows()
+            ? "ffmpeg-master-latest-win64-gpl.zip"
+            : "ffmpeg-master-latest-linux64-gpl.tar.xz";
+
+        string downloadUrl = $"https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/{fileName}";
+        
+        if (!Directory.Exists(downloadFolder))
+            Directory.CreateDirectory(downloadFolder);
+        
+        string downloadPath = Path.Combine(downloadFolder, fileName);
+        string extractedPath = Path.Combine(downloadFolder, fileName.Split(".")[0]);
+        try {
+            Logger.Info("Vidcutter", $"Starting download of {downloadUrl}");
+            if (!FileUtils.DownloadFFmpegFromUrl(downloadUrl, downloadPath, progress))
+                return;
+            FileUtils.ExtractArchive(downloadPath, downloadFolder, cleanArchive: true);
+            Directory.Move(extractedPath, Path.Combine(downloadFolder, "ffmpeg"));
+        } catch (Exception ex) {
+            Logger.Error("Vidcutter", ex.StackTrace+" "+ex.Message);
+        }
     }
 
     private static bool IsFFmpegInPath() {
         try {
-            Process process = CreateProcess("ffmpeg", "-version");
-            process.Start();
-            process.WaitForExit();
+            CommandUtils.RunProcess("ffmpeg", "-version");
             return true;
         } catch (Win32Exception) {
             return false;
         }
     }
     
-    private static Process CreateProcess(string fileName, string arguments) {
-        Logger.Info("Vidcutter", $"Executing {fileName} {arguments}");
-        return new Process {
-            StartInfo = new ProcessStartInfo {
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                FileName = fileName,
-                Arguments = arguments
-            }
-        };
-    }
-    
     private static Process FFmpeg(string arguments) {
-        if (_initialized) Initialize();
-        return CreateProcess($"{_ffmpegDirectory}ffmpeg", arguments);
+        if (!_initialized) Initialize();
+        return CommandUtils.CreateProcess($"{_ffmpegDirectory}ffmpeg", arguments);
     }
     
     private static Process FFprobe(string arguments) {
-        if (_initialized) Initialize();
-        return CreateProcess($"{_ffmpegDirectory}ffprobe", arguments);
+        if (!_initialized) Initialize();
+        return CommandUtils.CreateProcess($"{_ffmpegDirectory}ffprobe", arguments);
     }
 
     public static void ConcatenateClipsFromIndexFilePath(string indexFilePath, string output) {

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Threading.Tasks;
 using Celeste.Mod.UI;
+using Celeste.Mod.Vidcutter.Utils;
 using Microsoft.Xna.Framework;
 using Monocle; 
 using MonoMod.ModInterop;
@@ -140,50 +142,9 @@ public class VidcutterModule : EverestModule {
 
     public static void InstallFFmpeg() {
         OuiVidcutterProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiVidcutterProgress>();
-        progress.Init<OuiModOptions>(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"), new Task(() => {
-            InternalInstallFFmpeg(progress);
+        progress.Init<OuiVideoList>(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"), new Task(() => {
+            FFmpegUtils.InstallFFmpeg(progress);
         }), 0);
-    }
-
-    private static bool InternalInstallFFmpeg(OuiVidcutterProgress progress) {
-        string DownloadURL = "https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip";
-        string DownloadFolder = Path.Combine("./VidCutter/", "ffmpeg");
-        if (!Directory.Exists(DownloadFolder)) {
-            Directory.CreateDirectory(DownloadFolder);
-        }
-        string DownloadPath = Path.Combine(DownloadFolder, "ffmpeg.zip");
-        string InstallPath = Path.Combine("./VidCutter/", Path.Combine("ffmpeg", "ffmpeg"));
-        try {
-            Logger.Info("Vidcutter", $"Starting download of {DownloadURL}");
-            progress.LogLine(Dialog.Clean("VIDCUTTER_DOWNLOADINGFFMPEG"));
-            Everest.Updater.DownloadFileWithProgress(DownloadURL, DownloadPath, (position, length, speed) => {
-                        if (length > 0) {
-                            progress.Lines[progress.Lines.Count - 1] =
-                                Dialog.Clean("VIDCUTTER_DOWNLOADINGFFMPEG") + $" {(int) Math.Floor(100D * (position / (double) length))}% @ {speed} KiB/s";
-                            progress.Progress = position;
-                        } else {
-                            progress.Lines[progress.Lines.Count - 1] =
-                                Dialog.Clean("VIDCUTTER_DOWNLOADINGFFMPEG") + $" {(int) Math.Floor(position / 1000D)}KiB @ {speed} KiB/s";
-                        }
-
-                        progress.ProgressMax = (int) length;
-                        return true;
-                    });
-            if (!File.Exists(DownloadPath)) {
-                Logger.Error("Vidcutter", $"Download failed! The ZIP file went missing");
-                return false;
-            }
-
-            ZipFile.ExtractToDirectory(DownloadPath, InstallPath);
-
-            if (File.Exists(DownloadPath))
-                File.Delete(DownloadPath);
-
-            return true;
-        } catch (Exception ex) {
-            Logger.Error("Vidcutter", ex.StackTrace+" "+ex.Message);
-            return false;
-        }
     }
 
     public override void Load() {
