@@ -14,6 +14,8 @@ public class VideoCreation(OuiVidcutterProgress progress = null) {
     public List<ProcessedVideo> videos = [];
     public OuiVidcutterProgress progress = progress;
 
+    private static readonly string[] CollectableEvents = { "BERRY", "CASSETTE", "HEART", "KEY", "SUMMIT_GEM" };
+
     public static List<VideoFile> GetAllVideos() {
         List<LoggedString> logs = LogManager.GetAllLogs();
         if (logs.Count == 0) {
@@ -158,7 +160,12 @@ public class VideoCreation(OuiVidcutterProgress progress = null) {
             
             if (nextline?.isCleared() != true) {
                 LoggedString clipEnd = currentLine;
-                
+
+                // Extend clip to death when ending on a collectable
+                if (CollectableEvents.Contains(currentLine.Event) && nextline?.Event == "DEATH") {
+                    clipEnd = nextline;
+                }
+
                 if (nextline?.Event == "INTER ROOM PASSED") {
                     currentClip.Add(currentLine);
                     clipEnd = currentClip.LastOrDefault(log => log.Room == nextline.Room && log.isCleared());

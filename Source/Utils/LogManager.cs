@@ -20,11 +20,11 @@ class LogManager {
                     sid = "AREA_10";
                 }
             }
-            toLog += Dialog.Clean(sid);
+            toLog += Dialog.Clean(sid).Replace("|", "-");
             if (session.Area.Mode.ToString().EndsWith("Side")) {
                 toLog += $" [{session.Area.Mode.ToString()[0]}-Side]";
             }
-            toLog += $" | {session.Level} | ";
+            toLog += $" | {session.Level.Replace("|", "-")} | ";
         }
         toLog += message + $" | {!inState}";
         LogFileWriter.WriteLine(toLog);

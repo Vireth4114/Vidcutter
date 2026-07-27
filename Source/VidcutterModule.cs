@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -84,6 +85,22 @@ public class VidcutterModule : EverestModule {
         orig(self, mode, session, snow);
     }
 
+    public static void OnCollectHeartGem(On.Celeste.HeartGem.orig_Collect orig, HeartGem self, Player player) {
+        LogManager.Log("HEART", session: self.SceneAs<Level>().Session);
+        orig(self, player);
+    }
+
+    public static void OnCollectKey(On.Celeste.Key.orig_OnPlayer orig, Key self, Player player) {
+        if (self.GetType() == typeof(Key) && self.Collidable)
+            LogManager.Log("KEY", session: self.SceneAs<Level>().Session);
+        orig(self, player);
+    }
+
+    public static IEnumerator OnCollectSummitGem(On.Celeste.SummitGem.orig_SmashRoutine orig, SummitGem self, Player player, Level level) {
+        LogManager.Log("SUMMIT_GEM", session: level.Session);
+        return orig(self, player, level);
+    }
+
     public static void onPlayerUpdate(On.Celeste.Player.orig_Update orig, Player self) {
         orig(self);
         Vector2 playerPos = self.Position;
@@ -155,6 +172,10 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
         On.Celeste.Cassette.OnPlayer += OnCollectCassette;
         On.Celeste.LevelExit.ctor += OnRestart;
+        On.Celeste.HeartGem.Collect += OnCollectHeartGem;
+        On.Celeste.Key.OnPlayer += OnCollectKey;
+        On.Celeste.SummitGem.SmashRoutine += OnCollectSummitGem;
+
         typeof(VidcutterSpeedrunToolImport).ModInterop();
         SpeedrunToolInstalled = VidcutterSpeedrunToolImport.IgnoreSaveState is not null;
         if (SpeedrunToolInstalled) {
@@ -234,6 +255,9 @@ public class VidcutterModule : EverestModule {
         On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
         On.Celeste.Cassette.OnPlayer -= OnCollectCassette;
         On.Celeste.LevelExit.ctor -= OnRestart;
+        On.Celeste.HeartGem.Collect -= OnCollectHeartGem;
+        On.Celeste.Key.OnPlayer -= OnCollectKey;
+        On.Celeste.SummitGem.SmashRoutine -= OnCollectSummitGem;
         if (SpeedrunToolInstalled) {
             VidcutterSpeedrunToolImport.Unregister(action);
         }
