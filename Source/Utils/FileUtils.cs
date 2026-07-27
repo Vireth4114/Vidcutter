@@ -4,7 +4,10 @@ using System.IO.Compression;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
-public static class FileUtils {
+public static class FileUtils
+{
+    public const string VidcutterWorkingDirectory = "./VidCutter";
+    
     public static void ExtractZip(string zipFilePath, string destinationDirectory) {
         ZipFile.ExtractToDirectory(zipFilePath, destinationDirectory);
     }
@@ -28,24 +31,12 @@ public static class FileUtils {
     
     
 
-    public static bool DownloadFFmpegFromUrl(string downloadUrl, string downloadFilePath, OuiVidcutterProgress progress = null) {
-        progress?.LogLine(Dialog.Clean("VIDCUTTER_DOWNLOADINGFFMPEG"));
-        Everest.Updater.DownloadFileWithProgress(downloadUrl, downloadFilePath, (position, length, speed) => {
-            if (progress == null)
-                return true;
-                    
-            if (length > 0) {
-                progress.Lines[^1] =
-                    Dialog.Clean("VIDCUTTER_DOWNLOADINGFFMPEG") + $" {(int) Math.Floor(100D * (position / (double) length))}% @ {speed} KiB/s";
-                progress.Progress = position;
-            } else {
-                progress.Lines[^1] =
-                    Dialog.Clean("VIDCUTTER_DOWNLOADINGFFMPEG") + $" {(int) Math.Floor(position / 1000D)}KiB @ {speed} KiB/s";
-            }
-
-            progress.ProgressMax = (int) length;
-            return true;
-        });
+    public static bool DownloadFFmpegFromUrl(
+        string downloadUrl,
+        string downloadFilePath, 
+        Func<int, long, int, bool> progressCallback = null
+    ) {
+        Everest.Updater.DownloadFileWithProgress(downloadUrl, downloadFilePath, progressCallback ?? ((_, _, _) => true));
 
         if (File.Exists(downloadFilePath))
             return true;

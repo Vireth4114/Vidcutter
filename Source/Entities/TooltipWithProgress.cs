@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Celeste.Mod.Vidcutter;
+namespace Celeste.Mod.Vidcutter.Entities;
 
 public class TooltipWithProgress(string message) : Tooltip(message, 0) {
     public float progress = 0f;

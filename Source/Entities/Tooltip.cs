@@ -3,7 +3,7 @@ using System.Linq;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Celeste.Mod.Vidcutter;
+namespace Celeste.Mod.Vidcutter.Entities;
 
 public class Tooltip : Entity {
     protected const int Padding = 25;

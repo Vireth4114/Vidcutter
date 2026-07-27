@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
-using Celeste.Mod.UI;
 using Celeste.Mod.Vidcutter.Utils;
 using Microsoft.Xna.Framework;
 using Monocle; 
@@ -138,18 +136,14 @@ public class VidcutterModule : EverestModule {
     }
 
     public static void InstallFFmpeg() {
-        OuiVidcutterProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiVidcutterProgress>();
-        progress.Init<OuiVideoList>(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"), new Task(() => {
-            FFmpegUtils.InstallFFmpeg(progress);
-        }), 0);
     }
 
     public override void Load() {
-        string logFolder = Path.Combine("./VidCutter/", Path.Combine("logs"));
+        string logFolder = Path.Combine(FileUtils.VidcutterWorkingDirectory, Path.Combine("logs"));
         if (!Directory.Exists(logFolder)) {
             Directory.CreateDirectory(logFolder);
         }
-        LogManager.logPath = Path.Combine("./VidCutter/", Path.Combine("logs", "log.txt"));
+        LogManager.logPath = Path.Combine(FileUtils.VidcutterWorkingDirectory, Path.Combine("logs", "log.txt"));
         LogManager.LogFileWriter = new StreamWriter(LogManager.logPath, true) {
             AutoFlush = true
         };
@@ -175,7 +169,7 @@ public class VidcutterModule : EverestModule {
         }
         DurationCache = new Dictionary<string, TimeSpan>();
 
-        string cacheFile = Path.Combine("./VidCutter/", "durationCache.txt");
+        string cacheFile = Path.Combine(FileUtils.VidcutterWorkingDirectory, "durationCache.txt");
         if (File.Exists(cacheFile)) {
             string[] lines = File.ReadAllLines(cacheFile);
             foreach (string line in lines) {
@@ -222,7 +216,7 @@ public class VidcutterModule : EverestModule {
         if (DurationCache != null && !DurationCache.ContainsKey(video)) {
             DurationCache[video] = duration;
         }
-        string cacheFile = Path.Combine("./VidCutter/", "durationCache.txt");
+        string cacheFile = Path.Combine(FileUtils.VidcutterWorkingDirectory, "durationCache.txt");
         using (StreamWriter writer = new StreamWriter(cacheFile, false)) {
             foreach (KeyValuePair<string, TimeSpan> entry in DurationCache) {
                 writer.WriteLine($"{entry.Key} | {entry.Value}");

@@ -1,13 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Celeste.Mod.Vidcutter;
+using Celeste.Mod.UI;
+using Celeste.Mod.Vidcutter.Entities;
 using Celeste.Mod.Vidcutter.Utils;
 using Microsoft.Xna.Framework;
 using Monocle;
 using static Celeste.TextMenu;
 
-namespace Celeste.Mod.UI;
+namespace Celeste.Mod.Vidcutter.UI;
 
 class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     private const float onScreenX = 960f;

@@ -5,6 +5,8 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Celeste.Mod.UI;
+using Celeste.Mod.Vidcutter.Entities;
+using Celeste.Mod.Vidcutter.UI;
 using Celeste.Mod.Vidcutter.Utils;
 namespace Celeste.Mod.Vidcutter;
 
@@ -55,7 +57,7 @@ public class VideoCreation(OuiVidcutterProgress progress = null) {
         DateTime endVideo = video.GetEndTime();
         List<LoggedString[]> processed = ProcessLogs(startVideo, endVideo, processedVideo.Level);
         
-        StreamWriter listVideos = new StreamWriter(Path.Combine("./VidCutter/", Path.Combine("videos.txt")), true);
+        StreamWriter listVideos = new StreamWriter(Path.Combine(FileUtils.VidcutterWorkingDirectory, Path.Combine("videos.txt")), true);
         int videoIdx = startIdx;
         foreach (LoggedString[] line in processed) {
             progress.Progress = 0;
@@ -76,7 +78,7 @@ public class VideoCreation(OuiVidcutterProgress progress = null) {
                 video, 
                 startClip, 
                 endClip,
-                output: $"./VidCutter/{videoIdx}.mp4",
+                output: Path.Combine(FileUtils.VidcutterWorkingDirectory, $"{videoIdx}.mp4"),
                 onProgress: timeProcessed => {
                     progress.Progress = (int)(timeProcessed.TotalSeconds / clipDuration * 100);
                 }
@@ -91,12 +93,12 @@ public class VideoCreation(OuiVidcutterProgress progress = null) {
     public void ConcatAndClean(int videoCount) {
         string output = getOutputVideoName(videos[0].Level);
         Logger.Info("Vidcutter", $"Concatenating {videoCount} videos into {output}");
-        FFmpegUtils.ConcatenateClipsFromIndexFilePath("./VidCutter/videos.txt", output);
+        FFmpegUtils.ConcatenateClipsFromIndexFilePath(Path.Combine(FileUtils.VidcutterWorkingDirectory, "videos.txt"), output);
         Logger.Info("Vidcutter", $"Concatenation done, saved at {output}. Starting cleaning process.");
 
-        File.Delete("./VidCutter/videos.txt");
+        File.Delete(Path.Combine(FileUtils.VidcutterWorkingDirectory, "videos.txt"));
         for (int i = 1; i < videoCount; i++) {
-            File.Delete($"./VidCutter/{i}.mp4");
+            File.Delete(Path.Combine(FileUtils.VidcutterWorkingDirectory, $"{i}.mp4"));
         }
         Logger.Info("Vidcutter", "Cleaning process has ended correctly.");
     }

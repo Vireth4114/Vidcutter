@@ -1,9 +1,8 @@
-using System.Buffers.Text;
 using Microsoft.Xna.Framework;
 using static Celeste.TextMenu;
 using static Celeste.TextMenuExt;
 
-namespace Celeste.Mod.Vidcutter;
+namespace Celeste.Mod.Vidcutter.Entities;
 
 public class CustomButton : Button {
     public string LabelIndex;

@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Celeste.Mod.Vidcutter.Utils;
 
-namespace Celeste.Mod.Vidcutter;
+namespace Celeste.Mod.Vidcutter.Utils;
 
 class LogManager {
     public static string logPath;

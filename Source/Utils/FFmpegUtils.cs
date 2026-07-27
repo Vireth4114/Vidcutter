@@ -12,47 +12,46 @@ public static class FFmpegUtils {
     /**
      * Initialize FFmpeg, installing it locally if it's not in the path
      *
-     * @return true if no installation has to be done
+     * @return true if installation has to be done
      */
-    public static bool Initialize() {
-        if (_initialized) return true;
+    public static bool Initialize(Action installCallback = null) {
+        if (_initialized) return false;
         
         if (IsFFmpegInPath()) {
             _ffmpegDirectory = "";
             _initialized = true;
-            return true;
+            return false;
         }
 
-        string ffmpegBaseDir = Path.Combine("./VidCutter", "ffmpeg");
+        string ffmpegBaseDir = Path.Combine(FileUtils.VidcutterWorkingDirectory, "ffmpeg");
         bool isInstalling = false;
         
         if (!Directory.Exists(ffmpegBaseDir)) {
             isInstalling = true;
-            VidcutterModule.InstallFFmpeg();
+            (installCallback ?? InstallFFmpeg)();
         }
 
         _ffmpegDirectory = Path.Combine(ffmpegBaseDir, "bin") + "/";
         _initialized = true;
-        return !isInstalling;
+        return isInstalling;
     }
-    
-    public static void InstallFFmpeg(OuiVidcutterProgress progress = null) {
-        const string downloadFolder = "./VidCutter/"; //TODO à externaliser
 
+    public static void InstallFFmpeg() { InstallFFmpeg(null); }
+    
+    public static void InstallFFmpeg(Func<int, long, int, bool> progressCallback) {
+        const string downloadFolder = FileUtils.VidcutterWorkingDirectory;
+        
         string fileName = OperatingSystem.IsWindows()
             ? "ffmpeg-master-latest-win64-gpl.zip"
             : "ffmpeg-master-latest-linux64-gpl.tar.xz";
 
         string downloadUrl = $"https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/{fileName}";
         
-        if (!Directory.Exists(downloadFolder))
-            Directory.CreateDirectory(downloadFolder);
-        
         string downloadPath = Path.Combine(downloadFolder, fileName);
         string extractedPath = Path.Combine(downloadFolder, fileName.Split(".")[0]);
         try {
             Logger.Info("Vidcutter", $"Starting download of {downloadUrl}");
-            if (!FileUtils.DownloadFFmpegFromUrl(downloadUrl, downloadPath, progress))
+            if (!FileUtils.DownloadFFmpegFromUrl(downloadUrl, downloadPath, progressCallback))
                 return;
             FileUtils.ExtractArchive(downloadPath, downloadFolder, cleanArchive: true);
             Directory.Move(extractedPath, Path.Combine(downloadFolder, "ffmpeg"));
