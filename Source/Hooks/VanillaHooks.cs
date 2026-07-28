@@ -89,7 +89,7 @@ public static class VanillaHooks {
 
     private static void OnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
         if (Settings.CutFromLastSaveState.Pressed) {
-            VideoCreation.ProcessLastLogFromState();
+            VideoManager.ProcessLastLogFromStateWithTooltip();
         }
         orig(self, gameTime);
     }

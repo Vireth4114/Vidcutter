@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Celeste.Mod.UI;
+using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Utils;
 
 namespace Celeste.Mod.Vidcutter.UI;
@@ -44,7 +45,7 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
     }
 
     private int ProcessRow(LevelInAVideo levelInAVideo, StreamWriter clipsIndexWriter, int startIdx = 1) {
-        List<GameplayClip> clips = VideoCreation.ProcessLogs(levelInAVideo);
+        List<GameplayClip> clips = VideoManager.ProcessLogs(levelInAVideo);
         VideoFile video = levelInAVideo.Video;
         int clipIdx = startIdx;
         foreach (GameplayClip clip in clips) {
@@ -71,7 +72,7 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
     }
 
     private void Concatenate() {
-        string output = VideoCreation.GetOutputVideoName(_rowsToProcess[0].Level);
+        string output = VideoManager.GetOutputVideoName(_rowsToProcess[0].Level);
         FFmpegUtils.ConcatenateClipsFromIndexFilePath(FileUtils.ClipsIndexFile, output);
     }
 

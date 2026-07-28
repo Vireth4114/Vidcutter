@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Celeste.Mod.Vidcutter;
+namespace Celeste.Mod.Vidcutter.Models;
 
 public record LoggedString(
     DateTime Time,

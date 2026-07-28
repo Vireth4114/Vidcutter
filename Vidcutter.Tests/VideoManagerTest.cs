@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Celeste.Mod.Vidcutter;
+using Celeste.Mod.Vidcutter.Models;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Vidcutter.Tests;
 
 [TestClass]
-[TestSubject(typeof(VideoCreation))]
-public class VideoCreationTest {
+[TestSubject(typeof(VideoManager))]
+public class VideoManagerTest {
     
     
     [TestMethod]
@@ -77,7 +78,7 @@ public class VideoCreationTest {
             new(DateTime.Parse("18:40:15.312"), "CLOSE TO SPAWNPOINT", "Prologue", "1", true)
         ];
 
-        List<GameplayClip> clips = VideoCreation.ProcessLogs(logs);
+        List<GameplayClip> clips = VideoManager.ProcessLogs(logs);
 
         List<GameplayClip> expectedClips =
         [

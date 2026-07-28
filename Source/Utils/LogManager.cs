@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Celeste.Mod.Vidcutter.Models;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 

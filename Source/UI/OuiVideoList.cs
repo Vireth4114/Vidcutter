@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Celeste.Mod.UI;
 using Celeste.Mod.Vidcutter.Entities;
+using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Utils;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -32,9 +33,9 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         _buttons.Clear();
         _toProcess.Clear();
 
-        foreach (VideoFile video in VideoCreation.GetAllVideos()) {
+        foreach (VideoFile video in VideoManager.GetAllVideos()) {
             HashSet<LevelInAVideo> rowsForVideo = [];
-            List<GameplayClip> clips = VideoCreation.ProcessLogs(video);
+            List<GameplayClip> clips = VideoManager.ProcessLogs(video);
             foreach (GameplayClip clip in clips) {
                 LevelInAVideo row = new LevelInAVideo(video.FileName, clip.Level);
                 rowsForVideo.Add(row);

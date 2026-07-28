@@ -1,6 +1,4 @@
-using Celeste.Mod.Vidcutter.Utils;
-
-namespace Celeste.Mod.Vidcutter;
+namespace Celeste.Mod.Vidcutter.Models;
 
 public record LevelInAVideo(string VideoName, string Level) {
     public VideoFile Video => VideoFile.Get(VideoName);

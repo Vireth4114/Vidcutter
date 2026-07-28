@@ -27,7 +27,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     public float DelayEnd { get; set; } = 1.2f;
     public void CreateDelayEndEntry(TextMenu menu, bool inGame) {
         menu.Add(new TextMenu.Slider(Dialog.Clean("MODOPTIONS_VIDCUTTER_DELAYPASS"), i => $"{i/5.0}s", 0, 100, (int)(DelayEnd*5.0)) {
-            OnValueChange = (value) => {
+            OnValueChange = value => {
                 DelayEnd = value/5.0f;
             }
         });
@@ -37,7 +37,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     public int DelayComplete { get; set; } = 20;
     public void CreateDelayCompleteEntry(TextMenu menu, bool inGame) {
         menu.Add(new TextMenu.Slider(Dialog.Clean("MODOPTIONS_VIDCUTTER_DELAYCOMPLETE"), i => $"{i}s", 0, 300, DelayComplete) {
-            OnValueChange = (value) => {
+            OnValueChange = value => {
                 DelayComplete = value;
             }
         });

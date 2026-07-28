@@ -1,6 +1,6 @@
 using System;
 
-namespace Celeste.Mod.Vidcutter;
+namespace Celeste.Mod.Vidcutter.Models;
 
 public record GameplayClip(LoggedString Start, LoggedString End)
 {

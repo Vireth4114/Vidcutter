@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Celeste.Mod.Vidcutter.Utils;
 
-namespace Celeste.Mod.Vidcutter.Utils;
+namespace Celeste.Mod.Vidcutter.Models;
 
 public class VideoFile {
     private static VidcutterModuleSettings Settings => VidcutterModule.Settings;

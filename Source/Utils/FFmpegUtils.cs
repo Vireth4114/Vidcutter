@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using Celeste.Mod.Vidcutter.Models;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 

@@ -7,13 +7,13 @@ using Monocle;
 namespace Celeste.Mod.Vidcutter.Entities;
 
 public class TooltipWithProgress(string message) : Tooltip(message, 0) {
-    public float progress = 0f;
-    public bool IsLoading = false;
-    private float startLine;
-    private float endLine;
+    public float Progress = 0f;
+    private bool _isLoading;
+    private float _startLine;
+    private float _endLine;
 
     protected override IEnumerator Dismiss() {
-        while (progress < 1f) {
+        while (Progress < 1f) {
             yield return null;
         }
         yield return base.Dismiss();
@@ -21,20 +21,18 @@ public class TooltipWithProgress(string message) : Tooltip(message, 0) {
 
     public override void Render() {
         base.Render();
-        if (IsLoading)
-        {
-            startLine = (startLine + Engine.RawDeltaTime) % 1f;
-            endLine = (startLine + 0.3f) % 1f;
+        if (_isLoading) {
+            _startLine = (_startLine + Engine.RawDeltaTime) % 1f;
+            _endLine = (_startLine + 0.3f) % 1f;
         } else {
-            startLine = 0;
-            endLine = progress;
+            _startLine = 0;
+            _endLine = Progress;
         }
-        if (startLine <= endLine)
-            Draw.Line(new Vector2(Engine.Width * startLine, Engine.Height), new Vector2(Engine.Width * endLine, Engine.Height), Color.White * alpha, 10f);
-        else
-        {
-            Draw.Line(new Vector2(Engine.Width * startLine, Engine.Height), new Vector2(Engine.Width, Engine.Height), Color.White * alpha, 10f);
-            Draw.Line(new Vector2(0, Engine.Height), new Vector2(Engine.Width * endLine, Engine.Height), Color.White * alpha, 10f);
+        if (_startLine <= _endLine) {
+            Draw.Line(new Vector2(Engine.Width * _startLine, Engine.Height), new Vector2(Engine.Width * _endLine, Engine.Height), Color.White * Alpha, 10f);
+        } else {
+            Draw.Line(new Vector2(Engine.Width * _startLine, Engine.Height), new Vector2(Engine.Width, Engine.Height), Color.White * Alpha, 10f);
+            Draw.Line(new Vector2(0, Engine.Height), new Vector2(Engine.Width * _endLine, Engine.Height), Color.White * Alpha, 10f);
         }
     }
 
@@ -47,23 +45,20 @@ public class TooltipWithProgress(string message) : Tooltip(message, 0) {
     }
 
     private IEnumerator LoadingDelay(float delay, Action onComplete = null) {
-        IsLoading = true;
+        _isLoading = true;
         yield return delay;
-        IsLoading = false;
+        _isLoading = false;
         onComplete?.Invoke();
     }
 
     public static TooltipWithProgress Show(string message) {
-        if (Engine.Scene is { } scene) {
-            if (!scene.Tracker.Entities.TryGetValue(typeof(Tooltip), out var tooltips)) {
-                tooltips = [..scene.Entities.FindAll<Tooltip>()
-                    .ToList().Cast<Entity>()];
-            }
-            tooltips.ForEach(entity => entity.RemoveSelf());
-            TooltipWithProgress progress = new(message);
-            scene.Add(progress);
-            return progress;
-        }
-        return null;
+        if (Engine.Scene is not { } scene) return null;
+        scene.Entities
+            .FindAll<Tooltip>()
+            .ToList()
+            .ForEach(entity => entity.RemoveSelf());
+        TooltipWithProgress progress = new(message);
+        scene.Add(progress);
+        return progress;
     }
 }

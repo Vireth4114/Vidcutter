@@ -4,10 +4,11 @@ using System.Linq;
 using System.IO;
 using System.Text.RegularExpressions;
 using Celeste.Mod.Vidcutter.Entities;
+using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Utils;
 namespace Celeste.Mod.Vidcutter;
 
-public static class VideoCreation {
+public static class VideoManager {
     private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
 
     public static List<VideoFile> GetAllVideos() {
@@ -107,59 +108,57 @@ public static class VideoCreation {
         return logs.LastOrDefault(log => log.Room == room && log.IsCleared());
     }
 
-    public static void ProcessLastLogFromState() {
+    public static void ProcessLastLogFromStateWithTooltip() {
         if (!Directory.Exists(Settings.VideoFolder)) {
             Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_VIDEO_FOLDER_NOT_FOUND"));
             return;
         }
+        
         string lastVideo = Directory.GetFiles(Settings.VideoFolder)
-            .OrderByDescending(f => File.GetLastWriteTime(f))
+            .OrderByDescending(File.GetLastWriteTime)
             .FirstOrDefault();
         if (lastVideo == null) {
             Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_VIDEO_NOT_FOUND"));
             return;
         }
+        
         VideoFile lastVideoFile = VideoFile.Get(lastVideo);
         if (!lastVideoFile.CanBeProcessed) {
             Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_INVALID_FORMAT_FOR_CLIPPING"));
             return;
         }
+
         List<LoggedString> logs = LogManager.GetAllLogs(lastVideoFile);
         LoggedString stateLog = logs.LastOrDefault(log => log.Event.Contains("STATE"));
         if (stateLog == null) {
             Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_STATE_NOT_FOUND"));
             return;
         }
-        LoggedString endLog = logs.LastOrDefault();
+        
+        GameplayClip clip = new(stateLog, logs.Last());
         
         TooltipWithProgress progress = TooltipWithProgress.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSING_VIDEO"));
         
-        void process() => ProcessLastLogFromState(progress, lastVideoFile, stateLog, endLog);
         if (lastVideoFile.IsStillWriting()) {
-            progress.AddLoadingDelay(5f, process);
+            progress.AddLoadingDelay(5f, () => ProcessClipInTooltip(progress, lastVideoFile, clip));
         } else {
-            process();
+            ProcessClipInTooltip(progress, lastVideoFile, clip);
         }
     }
 
-    public static void ProcessLastLogFromState(TooltipWithProgress progress, VideoFile video, LoggedString stateLog, LoggedString endLog) {
-        DateTime videoStartTime = video.GetCreationTime();
-        TimeSpan startClip = stateLog.Time + TimeSpan.FromSeconds(Settings.DelayStart) - videoStartTime;
-        float delay = Settings.DelayEnd;
-        TimeSpan endClip = endLog.Time + TimeSpan.FromSeconds(delay) - videoStartTime;
-        double clipDuration = (endClip - startClip).TotalSeconds;
-        string output = GetOutputVideoName(stateLog.Level);
+    private static void ProcessClipInTooltip(TooltipWithProgress progress, VideoFile video, GameplayClip clip) {
+        string output = GetOutputVideoName(clip.Level);
         
         FFmpegUtils.NonBlockingCutClip(
             video, 
-            startClip, 
-            endClip,
+            clip.StartTimeWithDelay - video.GetCreationTime(), 
+            clip.EndTimeWithDelay - video.GetCreationTime(),
             output,
             onProgress: timeProcessed => {
-                progress.progress = (float) (timeProcessed.TotalSeconds / clipDuration);
+                progress.Progress = (float) (timeProcessed.TotalSeconds / clip.Duration);
             }
         ).Exited += (_, _) => {
-            progress.progress = 1f;
+            progress.Progress = 1f;
             Tooltip.Show(output + " " + Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSED_VIDEO"), 3f);
         };
     }

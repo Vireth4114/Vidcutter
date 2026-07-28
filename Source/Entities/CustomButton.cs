@@ -1,3 +1,4 @@
+using Celeste.Mod.Vidcutter.Models;
 using Microsoft.Xna.Framework;
 using static Celeste.TextMenu;
 using static Celeste.TextMenuExt;
@@ -7,7 +8,7 @@ namespace Celeste.Mod.Vidcutter.Entities;
 public class CustomButton(string label, LevelInAVideo levelInAVideo) : Button(label) {
     public string LabelIndex = "";
     public bool Colored;
-    public LevelInAVideo Data = levelInAVideo;
+    public readonly LevelInAVideo Data = levelInAVideo;
 
     public override void Render(Vector2 position, bool highlighted) {
         float alpha = Container.Alpha;
@@ -20,10 +21,8 @@ public class CustomButton(string label, LevelInAVideo levelInAVideo) : Button(la
     }
 }
 
-public class CustomEaseIn : EaseInSubHeaderExt {
-    public CustomEaseIn(string label, bool initiallyVisible, TextMenu menu, string icon = null) :
-        base(label, initiallyVisible, menu, icon) {}
-
+public class CustomEaseIn(string label, bool initiallyVisible, TextMenu menu, string icon = null)
+    : EaseInSubHeaderExt(label, initiallyVisible, menu, icon) {
     public override void Render(Vector2 position, bool highlighted)
     {
         position += Offset;

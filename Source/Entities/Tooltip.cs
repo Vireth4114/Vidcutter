@@ -6,26 +6,26 @@ using Monocle;
 namespace Celeste.Mod.Vidcutter.Entities;
 
 public class Tooltip : Entity {
-    protected const int Padding = 25;
-    protected readonly string message;
-    protected float alpha;
-    protected float unEasedAlpha;
-    protected readonly float duration;
+    private const int Padding = 25;
+    private readonly string _message;
+    protected float Alpha;
+    private float _unEasedAlpha;
+    private readonly float _duration;
 
-    public Tooltip(string message, float duration = 1f) {
+    protected Tooltip(string message, float duration = 1f) {
         Logger.Info("Vidcutter", "Showing tooltip: " + message);
-        this.message = message;
-        this.duration = duration;
+        _message = message;
+        _duration = duration;
         Vector2 messageSize = ActiveFont.Measure(message);
-        Position = new(Padding, Engine.Height - messageSize.Y - Padding / 2f);
+        Position = new Vector2(Padding, Engine.Height - messageSize.Y - Padding / 2f);
         Tag = Tags.HUD | Tags.Global | Tags.FrozenUpdate | Tags.PauseUpdate | Tags.TransitionUpdate;
         Add(new Coroutine(Show()));
     }
 
-    protected IEnumerator Show() {
-        while (alpha < 1f) {
-            unEasedAlpha = Calc.Approach(unEasedAlpha, 1f, Engine.RawDeltaTime * 5f);
-            alpha = Ease.SineOut(unEasedAlpha);
+    private IEnumerator Show() {
+        while (Alpha < 1f) {
+            _unEasedAlpha = Calc.Approach(_unEasedAlpha, 1f, Engine.RawDeltaTime * 5f);
+            Alpha = Ease.SineOut(_unEasedAlpha);
             yield return null;
         }
 
@@ -33,10 +33,10 @@ public class Tooltip : Entity {
     }
 
     protected virtual IEnumerator Dismiss() {
-        yield return duration;
-        while (alpha > 0f) {
-            unEasedAlpha = Calc.Approach(unEasedAlpha, 0f, Engine.RawDeltaTime * 5f);
-            alpha = Ease.SineIn(unEasedAlpha);
+        yield return _duration;
+        while (Alpha > 0f) {
+            _unEasedAlpha = Calc.Approach(_unEasedAlpha, 0f, Engine.RawDeltaTime * 5f);
+            Alpha = Ease.SineIn(_unEasedAlpha);
             yield return null;
         }
 
@@ -45,19 +45,24 @@ public class Tooltip : Entity {
 
     public override void Render() {
         base.Render();
-        ActiveFont.DrawOutline(message, Position, Vector2.Zero, Vector2.One, Color.White * alpha, 2,
-            Color.Black * alpha * alpha * alpha);
+        ActiveFont.DrawOutline(
+            _message,
+            position: Position,
+            justify: Vector2.Zero,
+            scale: Vector2.One,
+            color: Color.White * Alpha,
+            stroke: 2,
+            strokeColor: Color.Black * Alpha * Alpha * Alpha
+        );
     }
 
     public static void Show(string message, float duration = 1f) {
-        if (Engine.Scene is { } scene) {
-            if (!scene.Tracker.Entities.TryGetValue(typeof(Tooltip), out var tooltips)) {
-                tooltips = [..scene.Entities.FindAll<Tooltip>()
-                    .Where(tooltip => tooltip is not TooltipWithProgress)
-                    .ToList().Cast<Entity>()];
-            }
-            tooltips.ForEach(entity => entity.RemoveSelf());
-            scene.Add(new Tooltip(message, duration));
-        }
+        if (Engine.Scene is not { } scene) return;
+        scene.Entities
+            .FindAll<Tooltip>()
+            .Where(tooltip => tooltip is not TooltipWithProgress)
+            .ToList()
+            .ForEach(entity => entity.RemoveSelf());
+        scene.Add(new Tooltip(message, duration));
     }
 }
