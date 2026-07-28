@@ -1,33 +1,79 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
-class LogManager {
-    public static string logPath;
-    public static StreamWriter LogFileWriter = null;
-    public static bool inState = false;
+public static class LogManager {
+    private static VidcutterState State => VidcutterModule.State;
+    private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
+    private static StreamWriter _logFileWriter;
+    private static bool _initialized;
 
-    public static void Log(string message, Session session = null) {
-        string toLog = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] ";
-        if (session != null) {
-            string sid = session.Area.SID;
-            if (sid.StartsWith("Celeste/")) {
-                sid = $"AREA_{sid.Substring(8, 1)}";
-                if (sid == "AREA_L") {
-                    sid = "AREA_10";
-                }
-            }
-            toLog += Dialog.Clean(sid).Replace("|", "-");
-            if (session.Area.Mode.ToString().EndsWith("Side")) {
-                toLog += $" [{session.Area.Mode.ToString()[0]}-Side]";
-            }
-            toLog += $" | {session.Level.Replace("|", "-")} | ";
+    public static void Initialize() {
+        string logFolder = Path.Combine(FileUtils.VidcutterWorkingDirectory, Path.Combine("logs"));
+        if (!Directory.Exists(logFolder)) {
+            Directory.CreateDirectory(logFolder);
         }
-        toLog += message + $" | {!inState}";
-        LogFileWriter.WriteLine(toLog);
+        OpenWriter();
+        _initialized = true;
+    }
+
+    public static void OpenWriter() {
+        _logFileWriter = new StreamWriter(FileUtils.LogFile, true) {
+            AutoFlush = true
+        };
+    }
+
+    public static void CloseWriter() {
+        _logFileWriter?.Dispose();
+        _logFileWriter = null;
+    }
+
+    private static void WriteLine(string line) {
+        if (!_initialized) Initialize();
+        _logFileWriter.WriteLine(line);
+    }
+
+    private static string[] GetAllLinesFromLogFile() {
+        CloseWriter();
+        string[] lines = File.ReadAllLines(FileUtils.LogFile);
+        OpenWriter();
+        return lines;
+    }
+
+    private static void RewriteLogFileWith(string[] lines) {
+        CloseWriter();
+        using (StreamWriter writer = new StreamWriter(FileUtils.LogFile, false)) {
+            foreach (string line in lines)
+                writer.WriteLine(line);
+        }
+        OpenWriter();
+    }
+    
+    private static string ToTitleCase(string text) {
+        return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(text.ToLowerInvariant());
+    }
+
+    public static void Log(string message, Session session) {
+        string sid = session.Area.SID;
+        if (sid.StartsWith("Celeste/")) {
+            sid = sid.Contains("LostLevels") ? "AREA_10" : $"AREA_{sid[8]}";
+        }
+        
+        string chapter = Dialog.Clean(sid).Replace("|", "-");
+
+        chapter += session.Area.Mode switch {
+            AreaMode.BSide => $" [{ToTitleCase(Dialog.Clean("OVERWORLD_REMIX"))}]",
+            AreaMode.CSide => $" [{ToTitleCase(Dialog.Clean("OVERWORLD_REMIX2"))}]",
+            _ => ""
+        };
+
+        string room = session.Level.Replace("|", "-");
+        
+        WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {chapter} | {room} | {message} | {!State.IsFromASavestate}");
     }
 
     public static List<LoggedString> GetAllLogs(VideoFile video, string level = null) {
@@ -35,56 +81,40 @@ class LogManager {
     }
 
     public static List<LoggedString> GetAllLogs(DateTime? startVideo = null, DateTime? endVideo = null, string level = null) {
-        LogFileWriter.Close();
-        string[] lines = File.ReadAllLines(logPath);
+        string[] lines = GetAllLinesFromLogFile();
+        
         List<LoggedString> parsedLines = new List<LoggedString>();
         foreach (string line in lines) {
-            DateTime logTime = DateTime.Parse(line.Substring(1, 23));
-            string[] loggedEvent = line.Substring(26).Split(" | ");
-            bool condition = true;
-            if (startVideo != null) {
-                condition &= startVideo <= logTime;
-            }
-            if (endVideo != null) {
-                condition &= logTime <= endVideo;
-            }
-            if (level != null) {
-                condition &= loggedEvent[0] == level;
-            }
-            if (condition) {
+            DateTime logTime = DateTime.Parse(line[1..24]);
+            string[] loggedEvent = line[26..].Split(" | ");
+                
+            if ((startVideo == null || startVideo <= logTime) &&
+                (endVideo == null || logTime <= endVideo) &&
+                (level == null || loggedEvent[0] == level))
+            {
                 parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1], loggedEvent.ElementAtOrDefault(3)));
             }
         }
-
-        LogFileWriter = new StreamWriter(logPath, true) {
-            AutoFlush = true
-        };
         return parsedLines;
     }
 
-    public static void deleteLogs(List<ProcessedVideo> rows){
+    public static void DeleteLogs(List<ProcessedVideo> rows){
         List<LoggedString> allLogs = GetAllLogs();
+        
         foreach (ProcessedVideo row in rows) {
-            VideoFile video = new(Path.Combine(VidcutterModule.Settings.VideoFolder, row.Video));
+            VideoFile video = new(Path.Combine(Settings.VideoFolder, row.Video));
+            
             string level = row.Level;
             DateTime startVideo = video.GetCreationTime();
             DateTime endVideo = video.GetEndTime();
-            List<LoggedString> allLogsCopy = [.. allLogs];
-            foreach (LoggedString log in allLogsCopy) {
-                if (startVideo < log.Time && log.Time < endVideo && log.Level == level) {
-                    allLogs.Remove(log);
-                }
-            }
+            
+            allLogs.RemoveAll(log =>
+                startVideo < log.Time &&
+                log.Time < endVideo &&
+                log.Level == level
+            );
         }
-
-        LogFileWriter.Close();
-        using (StreamWriter writer = new StreamWriter(logPath, false)) {
-            foreach (LoggedString log in allLogs) {
-                writer.WriteLine(log.ToString());
-            }
-        }
-        LogFileWriter = new StreamWriter(logPath, true) {
-            AutoFlush = true
-        };
+        
+        RewriteLogFileWith(allLogs.Select(log => log.ToString()).ToArray());
     }
 }

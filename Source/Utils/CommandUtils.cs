@@ -3,14 +3,14 @@
 namespace Celeste.Mod.Vidcutter.Utils;
 
 public static class CommandUtils {
-    public static Process CreateProcess(string fileName, string arguments) {
+    public static Process CreateProcess(string fileName, string arguments, bool redirectOutput = false, bool redirectError = false) {
         Logger.Info("Vidcutter", $"Executing {fileName} {arguments}");
         return new Process {
             StartInfo = new ProcessStartInfo {
                 CreateNoWindow = true,
                 UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                RedirectStandardOutput = redirectOutput,
+                RedirectStandardError = redirectError,
                 FileName = fileName,
                 Arguments = arguments
             }

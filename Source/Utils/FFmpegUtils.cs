@@ -31,7 +31,7 @@ public static class FFmpegUtils {
             (installCallback ?? InstallFFmpeg)();
         }
 
-        _ffmpegDirectory = Path.Combine(ffmpegBaseDir, "bin") + "/";
+        _ffmpegDirectory = Path.Combine(ffmpegBaseDir, "bin") + Path.DirectorySeparatorChar;
         _initialized = true;
         return isInstalling;
     }
@@ -39,7 +39,7 @@ public static class FFmpegUtils {
     public static void InstallFFmpeg() { InstallFFmpeg(null); }
     
     public static void InstallFFmpeg(Func<int, long, int, bool> progressCallback) {
-        const string downloadFolder = FileUtils.VidcutterWorkingDirectory;
+        string downloadFolder = FileUtils.VidcutterWorkingDirectory;
         
         string fileName = OperatingSystem.IsWindows()
             ? "ffmpeg-master-latest-win64-gpl.zip"
@@ -69,14 +69,14 @@ public static class FFmpegUtils {
         }
     }
     
-    private static Process FFmpeg(string arguments) {
+    private static Process FFmpeg(string arguments, bool redirectOutput = false) {
         if (!_initialized) Initialize();
-        return CommandUtils.CreateProcess($"{_ffmpegDirectory}ffmpeg", arguments);
+        return CommandUtils.CreateProcess($"{_ffmpegDirectory}ffmpeg", arguments, redirectOutput: redirectOutput);
     }
     
     private static Process FFprobe(string arguments) {
         if (!_initialized) Initialize();
-        return CommandUtils.CreateProcess($"{_ffmpegDirectory}ffprobe", arguments);
+        return CommandUtils.CreateProcess($"{_ffmpegDirectory}ffprobe", arguments, redirectOutput: true, redirectError: true);
     }
 
     public static void ConcatenateClipsFromIndexFilePath(string indexFilePath, string output) {
@@ -91,7 +91,8 @@ public static class FFmpegUtils {
         
         Process process = FFmpeg(
             $"-ss {ss} -to {to} -i \"{video.FilePath}\" -c:a copy -map 0 -vcodec libx264 " +
-            $"-crf {VidcutterModule.Settings.CRF} -preset veryfast -y \"{output}\" -v warning -progress pipe:1"
+            $"-crf {VidcutterModule.Settings.CRF} -preset veryfast -y \"{output}\" -v warning -progress pipe:1",
+            redirectOutput: onProgress != null
         );
         
         if (onProgress != null) {

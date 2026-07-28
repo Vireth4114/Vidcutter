@@ -4,9 +4,10 @@ using System.IO.Compression;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
-public static class FileUtils
-{
-    public const string VidcutterWorkingDirectory = "./VidCutter";
+public static class FileUtils {
+    public static readonly string VidcutterWorkingDirectory = Path.Combine(".", "VidCutter");
+    public static readonly string DurationCacheFile = Path.Combine(VidcutterWorkingDirectory, "durationCache.txt");
+    public static readonly string LogFile = Path.Combine(VidcutterWorkingDirectory, "logs", "log.txt");
     
     public static void ExtractZip(string zipFilePath, string destinationDirectory) {
         ZipFile.ExtractToDirectory(zipFilePath, destinationDirectory);

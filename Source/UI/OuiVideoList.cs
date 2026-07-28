@@ -152,7 +152,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
                     string[] splitted = rowInfos[i].Split(" | ");
                     rowsToDelete.Add(new ProcessedVideo(splitted[0], splitted[1]));
                 }
-                LogManager.deleteLogs(rowsToDelete);
+                LogManager.DeleteLogs(rowsToDelete);
                 OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
             },
             Disabled = true

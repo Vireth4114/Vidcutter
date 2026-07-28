@@ -1,267 +1,30 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
+using Celeste.Mod.Vidcutter.Hooks;
 using Celeste.Mod.Vidcutter.Utils;
-using Microsoft.Xna.Framework;
-using Monocle; 
-using MonoMod.ModInterop;
-using MonoMod.RuntimeDetour;
 
 namespace Celeste.Mod.Vidcutter;
 
-[ModImportName("SpeedrunTool.SaveLoad")]
-public static class VidcutterSpeedrunToolImport {
-    public static Func<Action<Dictionary<Type, Dictionary<string, object>>, Level>, Action<Dictionary<Type, Dictionary<string, object>>, Level>, Action, Action<Level>, Action<Level>, Action, object> RegisterSaveLoadAction;
-    public static Action<Entity, bool> IgnoreSaveState;
-    public static Action<object> Unregister;
-}
-
 public class VidcutterModule : EverestModule {
-    public static VidcutterModule Instance { get; private set; }
+    private static VidcutterModule Instance { get; set; }
 
     public override Type SettingsType => typeof(VidcutterModuleSettings);
     public static VidcutterModuleSettings Settings => (VidcutterModuleSettings)Instance._Settings;
 
-    public override Type SessionType => typeof(VidcutterModuleSession);
-    public static VidcutterModuleSession Session => (VidcutterModuleSession)Instance._Session;
-
-    public override Type SaveDataType => typeof(VidcutterModuleSaveData);
-    public static VidcutterModuleSaveData SaveData => (VidcutterModuleSaveData)Instance._SaveData;
-
-    public static Vector2? previousRespawnPoint = null;
-    public static bool processWhenClose = false;
-    private static bool SpeedrunToolInstalled = false;
-    private static object action;
-    private static EverestModule vivHelperModule;
-    private static Hook vivHelperRespawnHook;
-
-    public static Dictionary<string, TimeSpan> DurationCache = null;
+    public static readonly VidcutterState State = new();
 
     public VidcutterModule() {
         Instance = this;
         Logger.SetLogLevel(nameof(VidcutterModule), LogLevel.Info);
     }
 
-    public static void OnComplete(On.Celeste.Level.orig_RegisterAreaComplete orig, Level self) {
-        if (!self.Completed) {
-            LogManager.Log("LEVEL COMPLETE", session: self.Session);
-            processWhenClose = false;
-        }
-        orig(self);
-    }
-
-    public static void OnDeath(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
-        if (playerIntro == Player.IntroTypes.Respawn) {
-            LogManager.inState = false;
-            LogManager.Log("DEATH", session: self.Session);
-            processWhenClose = false;
-        }
-        orig(self, playerIntro, isFromLoader);
-    }
-
-    public static void OnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
-        LogManager.inState = false;
-        LogManager.Log("LEVEL LOADED", session: self.Session);
-        orig(self);
-    }
-
-    public static void OnCollectStrawberry(On.Celeste.Strawberry.orig_OnCollect orig, Strawberry self) {
-        LogManager.Log("BERRY", session: self.SceneAs<Level>().Session);
-        orig(self);
-    }
-
-    public static void OnCollectCassette(On.Celeste.Cassette.orig_OnPlayer orig, Cassette self, Player player) {
-        if (!self.collected)
-            LogManager.Log("CASSETTE", session: self.SceneAs<Level>().Session);
-        orig(self, player);
-    }
-
-    public static void OnRestart(On.Celeste.LevelExit.orig_ctor orig, LevelExit self, LevelExit.Mode mode, Session session, HiresSnow snow) {
-        if (mode == LevelExit.Mode.Restart) {
-            LogManager.Log("RESTART CHAPTER", session: session);
-        }
-        orig(self, mode, session, snow);
-    }
-
-    public static void OnCollectHeartGem(On.Celeste.HeartGem.orig_Collect orig, HeartGem self, Player player) {
-        LogManager.Log("HEART", session: self.SceneAs<Level>().Session);
-        orig(self, player);
-    }
-
-    public static void OnCollectKey(On.Celeste.Key.orig_OnPlayer orig, Key self, Player player) {
-        if (self.GetType() == typeof(Key) && self.Collidable)
-            LogManager.Log("KEY", session: self.SceneAs<Level>().Session);
-        orig(self, player);
-    }
-
-    public static IEnumerator OnCollectSummitGem(On.Celeste.SummitGem.orig_SmashRoutine orig, SummitGem self, Player player, Level level) {
-        LogManager.Log("SUMMIT_GEM", session: level.Session);
-        return orig(self, player, level);
-    }
-
-    public static void onPlayerUpdate(On.Celeste.Player.orig_Update orig, Player self) {
-        orig(self);
-        Vector2 playerPos = self.Position;
-        Vector2? respawnPoint = self.SceneAs<Level>().Session.RespawnPoint;
-        if (respawnPoint == null) {
-            return;
-        }
-        if (previousRespawnPoint != respawnPoint) {
-            previousRespawnPoint = respawnPoint;
-            LogManager.Log($"ROOM PASSED", session: self.SceneAs<Level>().Session);
-            processWhenClose = true;
-        }
-        float deltaY = Math.Abs(playerPos.Y - respawnPoint.Value.Y);
-        float deltaX = Math.Abs(playerPos.X - respawnPoint.Value.X);
-        double distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (distance <= 50 && processWhenClose) {
-            LogManager.Log($"CLOSE TO SPAWNPOINT", session: self.SceneAs<Level>().Session);
-            processWhenClose = false;
-        }
-    }
-
-    public static void OnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
-        if (Settings.CutFromLastSaveState.Pressed) {
-            VideoCreation.ProcessLastLogFromState();
-        }
-        orig(self, gameTime);
-    }
-
-    public static void onLoadState(Level level) {
-        Vector2? playerPosition = level.Tracker.GetEntity<Player>()?.Position;
-        if (playerPosition == level.Session.RespawnPoint) {
-            LogManager.Log("STATE ON RESPAWN POINT", session: level.Session);
-        } else {   
-            LogManager.Log("STATE", session: level.Session);
-            LogManager.inState = true;
-        }
-        processWhenClose = false;
-        previousRespawnPoint = level.Session.RespawnPoint;
-    }
-
-    public static Level ModifyRoomToRespawnTo_Hook(Func<Level, Level> orig, Level level) {
-        Vector2? respawnPoint = level.Session.RespawnPoint;
-        Level returnValue = orig(level);
-        Vector2? newRespawnPoint = returnValue.Session.RespawnPoint;
-        if (respawnPoint != newRespawnPoint) {
-            LogManager.Log($"INTER ROOM PASSED", session: level.Session);
-            previousRespawnPoint = newRespawnPoint;
-        }
-        return returnValue;
-    }
-
-    public static void InstallFFmpeg() {
-    }
-
     public override void Load() {
-        string logFolder = Path.Combine(FileUtils.VidcutterWorkingDirectory, Path.Combine("logs"));
-        if (!Directory.Exists(logFolder)) {
-            Directory.CreateDirectory(logFolder);
-        }
-        LogManager.logPath = Path.Combine(FileUtils.VidcutterWorkingDirectory, Path.Combine("logs", "log.txt"));
-        LogManager.LogFileWriter = new StreamWriter(LogManager.logPath, true) {
-            AutoFlush = true
-        };
-        On.Celeste.Level.RegisterAreaComplete += OnComplete;
-        On.Celeste.Level.Begin += OnBegin;
-        On.Celeste.Level.LoadLevel += OnDeath;
-        On.Celeste.Player.Update += onPlayerUpdate;
-        On.Monocle.Engine.Update += OnUpdate;
-        On.Celeste.Strawberry.OnCollect += OnCollectStrawberry;
-        On.Celeste.Cassette.OnPlayer += OnCollectCassette;
-        On.Celeste.LevelExit.ctor += OnRestart;
-        On.Celeste.HeartGem.Collect += OnCollectHeartGem;
-        On.Celeste.Key.OnPlayer += OnCollectKey;
-        On.Celeste.SummitGem.SmashRoutine += OnCollectSummitGem;
-
-        typeof(VidcutterSpeedrunToolImport).ModInterop();
-        SpeedrunToolInstalled = VidcutterSpeedrunToolImport.IgnoreSaveState is not null;
-        if (SpeedrunToolInstalled) {
-            action = VidcutterSpeedrunToolImport.RegisterSaveLoadAction(
-                (_, level) => {},
-                (_, level) => { onLoadState(level); },
-                null,
-                null,
-                null,
-                null
-            );
-        }
-        DurationCache = new Dictionary<string, TimeSpan>();
-
-        string cacheFile = Path.Combine(FileUtils.VidcutterWorkingDirectory, "durationCache.txt");
-        if (File.Exists(cacheFile)) {
-            string[] lines = File.ReadAllLines(cacheFile);
-            foreach (string line in lines) {
-                string[] splitted = line.Split(" | ");
-                if (splitted.Length == 2) {
-                    DurationCache[splitted[0]] = TimeSpan.Parse(splitted[1]);
-                }
-            }
-        }
-        
-        EverestModuleMetadata vivHelper = new() {
-            Name = "VivHelper",
-            Version = new Version(1, 14, 0)
-        };
-
-        Everest.Loader.TryGetDependency(vivHelper, out vivHelperModule);
-
-        createVivHelperHook();
-    }
-
-    public static void createVivHelperHook() {
-        if (vivHelperModule == null) {
-            Logger.Info("Vidcutter", "VivHelper not found, skipping hook installation");
-            return;
-        }
-
-        Assembly vivHelperAsm = vivHelperModule.GetType().Assembly;
-
-        MethodInfo target = vivHelperAsm.GetType("VivHelper.Entities.SpawnPointHooks").GetMethod(
-            "ModifyRoomToRespawnTo",
-            BindingFlags.NonPublic | BindingFlags.Static
-        );
-
-        vivHelperRespawnHook = new Hook(
-            target,
-            typeof(VidcutterModule).GetMethod(
-                nameof(ModifyRoomToRespawnTo_Hook),
-                BindingFlags.Public | BindingFlags.Static
-            )
-        );
-    }
-
-    public static void writeCache(string video, TimeSpan duration) {
-        if (DurationCache != null && !DurationCache.ContainsKey(video)) {
-            DurationCache[video] = duration;
-        }
-        string cacheFile = Path.Combine(FileUtils.VidcutterWorkingDirectory, "durationCache.txt");
-        using (StreamWriter writer = new StreamWriter(cacheFile, false)) {
-            foreach (KeyValuePair<string, TimeSpan> entry in DurationCache) {
-                writer.WriteLine($"{entry.Key} | {entry.Value}");
-            }
-        }
+        LogManager.Initialize();
+        HookManager.LoadAll();
+        VideoFile.LoadDurationCache();
     }
 
     public override void Unload() {
-        LogManager.LogFileWriter.Close();
-        On.Celeste.Level.RegisterAreaComplete -= OnComplete;
-        On.Celeste.Level.Begin -= OnBegin;
-        On.Celeste.Level.LoadLevel -= OnDeath;
-        On.Celeste.Player.Update -= onPlayerUpdate;
-        On.Monocle.Engine.Update -= OnUpdate;
-        On.Celeste.Strawberry.OnCollect -= OnCollectStrawberry;
-        On.Celeste.Cassette.OnPlayer -= OnCollectCassette;
-        On.Celeste.LevelExit.ctor -= OnRestart;
-        On.Celeste.HeartGem.Collect -= OnCollectHeartGem;
-        On.Celeste.Key.OnPlayer -= OnCollectKey;
-        On.Celeste.SummitGem.SmashRoutine -= OnCollectSummitGem;
-        if (SpeedrunToolInstalled) {
-            VidcutterSpeedrunToolImport.Unregister(action);
-        }
-        vivHelperRespawnHook?.Dispose();
-        vivHelperRespawnHook = null;
+        LogManager.CloseWriter();
+        HookManager.UnloadAll();
     }
 }

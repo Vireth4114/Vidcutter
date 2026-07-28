@@ -48,7 +48,7 @@ public class VideoCreation(OuiVidcutterProgress progress = null) {
             }
             ConcatAndClean(idx);
             if (withDelete) {
-                LogManager.deleteLogs(videos);
+                LogManager.DeleteLogs(videos);
             }
         }), 100);
     }
@@ -111,7 +111,6 @@ public class VideoCreation(OuiVidcutterProgress progress = null) {
         foreach (string file in Directory.GetFiles(VidcutterModule.Settings.VideoFolder)) {
             Regex regex = new Regex(@$".*\\Vidcutter_{Regex.Escape(videoName)}_?(\d+)?\.mp4");
             Match match = regex.Match(file);
-            Logger.Info("Vidcutter", $"Checking existing file {file} against pattern {regex}: Match success: {match.Success}");
             if (match.Success) {
                 if (match.Groups.Count > 1 && match.Groups[1].Success) {
                     outputNumber = Math.Max(int.Parse(match.Groups[1].Value), outputNumber);
