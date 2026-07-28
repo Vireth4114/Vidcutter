@@ -10,12 +10,9 @@ public static class VanillaHooks {
     private static VidcutterState State => VidcutterModule.State;
     private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
     
-    private static void OnComplete(On.Celeste.Level.orig_RegisterAreaComplete orig, Level self) {
-        if (!self.Completed) {
-            LogManager.Log("LEVEL COMPLETE", session: self.Session);
-            State.LogWhenCloseToSpawnPoint = false;
-        }
-        orig(self);
+    private static void OnComplete(Level level, Scene nextScene, ref bool shouldReloadPortraits, ref bool shouldDissociateEntities) {
+        LogManager.Log("LEVEL COMPLETE", session: level.Session);
+        State.LogWhenCloseToSpawnPoint = false;
     }
 
     private static void OnDeath(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
@@ -95,7 +92,7 @@ public static class VanillaHooks {
     }
     
     public static void Load() {
-        On.Celeste.Level.RegisterAreaComplete += OnComplete;
+        Everest.Events.Level.OnEnd += OnComplete;
         On.Celeste.Level.Begin += OnBegin;
         On.Celeste.Level.LoadLevel += OnDeath;
         On.Celeste.Player.Update += OnPlayerUpdate;
@@ -109,7 +106,7 @@ public static class VanillaHooks {
     }
 
     public static void Unload() {
-        On.Celeste.Level.RegisterAreaComplete -= OnComplete;
+        Everest.Events.Level.OnEnd -= OnComplete;
         On.Celeste.Level.Begin -= OnBegin;
         On.Celeste.Level.LoadLevel -= OnDeath;
         On.Celeste.Player.Update -= OnPlayerUpdate;
