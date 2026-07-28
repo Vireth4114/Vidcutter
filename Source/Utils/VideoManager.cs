@@ -5,8 +5,8 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Celeste.Mod.Vidcutter.Entities;
 using Celeste.Mod.Vidcutter.Models;
-using Celeste.Mod.Vidcutter.Utils;
-namespace Celeste.Mod.Vidcutter;
+
+namespace Celeste.Mod.Vidcutter.Utils;
 
 public static class VideoManager {
     private static VidcutterModuleSettings Settings => VidcutterModule.Settings;

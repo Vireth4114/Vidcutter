@@ -77,8 +77,6 @@ public class VideoFile {
 
         if (OperatingSystem.IsWindows() && TryGetVideoDurationFromMetadata(out TimeSpan duration))
             _cachedEndTime = File.GetCreationTime(FilePath) + duration;
-        else if (IsStillWriting())
-            _cachedEndTime = File.GetLastWriteTime(FilePath);
         else
             return File.GetLastWriteTime(FilePath);
 
@@ -98,17 +96,22 @@ public class VideoFile {
         
         string strDuration;
         try {
+            Logger.Info("Vidcutter", "a");
             strDuration = FFmpegUtils.GetDurationString(FilePath);
         } catch (InvalidOperationException) {
+            Logger.Info("Vidcutter", "b");
             // If ffprobe throw an exception on the video, ffmpeg can't process it either
             CanBeProcessed = false;
             return false;
         }
 
+        Logger.Info("Vidcutter", "c");
         if (!double.TryParse(strDuration, out double durationDouble) || durationDouble <= 0) {
+            Logger.Info("Vidcutter", "d");
             // ffprobe can process the video but doesn't know its duration, may be a running mkv or missing metadata
             return false;
         }
+        Logger.Info("Vidcutter", "e");
         
         duration = TimeSpan.FromSeconds(durationDouble);
         CanBeProcessed = true;
