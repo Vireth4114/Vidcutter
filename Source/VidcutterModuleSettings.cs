@@ -60,7 +60,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
         }
         menu.Add(new TextMenu.Button(Dialog.Clean("MODOPTIONS_VIDCUTTER_CUTVIDEOS")) {
             OnPressed = () => {
-                if (!FFmpegUtils.Initialize(OuiVidcutterProgress.GotoInstallFFmpeg<OuiVideoList>)) {
+                if (!FFmpegUtils.Initialize(() => OuiModOptions.Instance.Overworld.Goto<OuiFFmpegInstallProgress>())) {
                     OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
                 }
             }

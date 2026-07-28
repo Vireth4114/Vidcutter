@@ -18,7 +18,7 @@ public static class VivHelperHooks {
         Level returnValue = orig(level);
         Vector2? newRespawnPoint = returnValue.Session.RespawnPoint;
         if (respawnPoint != newRespawnPoint) {
-            LogManager.Log($"INTER ROOM PASSED", session: level.Session);
+            LogManager.Log($"BACK TO START OF INTER ROOM", session: level.Session);
             State.PreviousRespawnPoint = newRespawnPoint;
         }
         return returnValue;

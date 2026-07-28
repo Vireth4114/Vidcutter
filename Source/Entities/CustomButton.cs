@@ -4,14 +4,11 @@ using static Celeste.TextMenuExt;
 
 namespace Celeste.Mod.Vidcutter.Entities;
 
-public class CustomButton : Button {
-    public string LabelIndex;
+public class CustomButton(string label, LevelInAVideo levelInAVideo) : Button(label) {
+    public string LabelIndex = "";
     public bool Colored;
+    public LevelInAVideo Data = levelInAVideo;
 
-    public CustomButton(string labelIndex, string label) : base(label) {
-        LabelIndex = labelIndex;
-    }
-    
     public override void Render(Vector2 position, bool highlighted) {
         float alpha = Container.Alpha;
         Color color = Disabled ? Color.DarkSlateGray : ((highlighted ? Container.HighlightColor : (Colored ? Color.Goldenrod : Color.White)) * alpha);

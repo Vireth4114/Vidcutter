@@ -8,7 +8,6 @@ namespace Celeste.Mod.Vidcutter.Utils;
 
 public static class LogManager {
     private static VidcutterState State => VidcutterModule.State;
-    private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
     private static StreamWriter _logFileWriter;
     private static bool _initialized;
 
@@ -92,17 +91,18 @@ public static class LogManager {
                 (endVideo == null || logTime <= endVideo) &&
                 (level == null || loggedEvent[0] == level))
             {
-                parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1], loggedEvent.ElementAtOrDefault(3)));
+                bool countTowardsClear = loggedEvent.ElementAtOrDefault(3) == null || bool.Parse(loggedEvent[3]);
+                parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1], countTowardsClear));
             }
         }
         return parsedLines;
     }
 
-    public static void DeleteLogs(List<ProcessedVideo> rows){
+    public static void DeleteLogs(List<LevelInAVideo> rows){
         List<LoggedString> allLogs = GetAllLogs();
         
-        foreach (ProcessedVideo row in rows) {
-            VideoFile video = new(Path.Combine(Settings.VideoFolder, row.Video));
+        foreach (LevelInAVideo row in rows) {
+            VideoFile video = VideoFile.Get(row.VideoName);
             
             string level = row.Level;
             DateTime startVideo = video.GetCreationTime();

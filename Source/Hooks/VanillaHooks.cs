@@ -29,7 +29,6 @@ public static class VanillaHooks {
 
     private static void OnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
         State.IsFromASavestate = false;
-        LogManager.Log("LEVEL LOADED", session: self.Session);
         orig(self);
     }
 

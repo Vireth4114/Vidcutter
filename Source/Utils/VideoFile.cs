@@ -5,7 +5,9 @@ using System.IO;
 namespace Celeste.Mod.Vidcutter.Utils;
 
 public class VideoFile {
+    private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
     private static readonly Dictionary<string, TimeSpan> DurationCache = new();
+    private static readonly Dictionary<string, VideoFile> VideoFileCache = new();
 
     public string FilePath { get; }
     public string FileName { get; }
@@ -30,7 +32,7 @@ public class VideoFile {
         }
     }
 
-    public VideoFile(string filePath) {
+    private VideoFile(string filePath) {
         if (!File.Exists(filePath)) {
             throw new InvalidOperationException($"The file path {filePath} leads to a non-existing file. Please report this issue.");
         }
@@ -39,6 +41,15 @@ public class VideoFile {
         FileName = Path.GetFileName(filePath);
         CanBeProcessed = true;
         TryGetVideoDurationFromMetadata(out TimeSpan _); // Cache duration at initialization as it is always used, to check immediately if the file can be processed
+    }
+
+    public static VideoFile Get(string fileName) {
+        string filePath = Path.Combine(Settings.VideoFolder, fileName);
+
+        if (VideoFileCache.TryGetValue(filePath, out VideoFile cachedVideoFile))
+            return cachedVideoFile;
+
+        return VideoFileCache[filePath] = new VideoFile(filePath);
     }
 
     public DateTime GetCreationTime() {

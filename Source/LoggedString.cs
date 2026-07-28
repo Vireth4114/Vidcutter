@@ -1,27 +1,36 @@
 using System;
+using System.Collections.Generic;
 
 namespace Celeste.Mod.Vidcutter;
 
-public class LoggedString {
-    public DateTime Time;
-    public string Event;
-    public string Level;
-    public string Room;
-    public bool CountTowardsClear;
-    public LoggedString(DateTime time, string _event, string level, string room, string countTowardsClear) {
-        Time = time;
-        Event = _event;
-        Level = level;
-        Room = room;
-        CountTowardsClear = countTowardsClear == null || bool.Parse(countTowardsClear);
+public record LoggedString(
+    DateTime Time,
+    string Event,
+    string Level,
+    string Room,
+    bool CountTowardsClear
+) {
+    private static readonly HashSet<string> ClearedEvents = [
+        "ROOM PASSED", "LEVEL COMPLETE", "CLOSE TO SPAWNPOINT"
+    ];
+    
+    private static readonly HashSet<string> CollectableEvents = [
+        "BERRY", "CASSETTE", "HEART", "KEY", "SUMMIT_GEM"
+    ];
+    
+    public bool IsCleared() {
+        return ClearedEvents.Contains(Event) || CollectableEvents.Contains(Event);
     }
-
-    public bool isCleared() {
-        string[] clearedEvents = {"ROOM PASSED", "LEVEL COMPLETE", "CASSETTE", "BERRY", "CLOSE TO SPAWNPOINT", "HEART", "KEY", "SUMMIT_GEM"};
-        return clearedEvents.Contains(Event);
+    
+    public bool IsCollectable() {
+        return CollectableEvents.Contains(Event);
+    }
+    
+    public bool BackToStartOfInterRoom() {
+        return Event is "BACK TO START OF INTER ROOM" or "INTER ROOM PASSED";
     }
 
     public override string ToString() {
-        return $"[{Time:yyyy-MM-dd HH:mm:ss.fff}] {Level} | {Room} | {Event}";
+        return $"[{Time:yyyy-MM-dd HH:mm:ss.fff}] {Level} | {Room} | {Event} | {CountTowardsClear}";
     }
 }
