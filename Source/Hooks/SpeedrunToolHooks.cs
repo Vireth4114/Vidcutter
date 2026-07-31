@@ -35,6 +35,7 @@ public static class SpeedrunToolHooks {
             LogManager.Log("STATE", session: level.Session);
             State.IsFromASavestate = true;
         }
+        State.LastState = State.LastEvent;
         State.LogWhenCloseToSpawnPoint = false;
         State.PreviousRespawnPoint = level.Session.RespawnPoint;
     }

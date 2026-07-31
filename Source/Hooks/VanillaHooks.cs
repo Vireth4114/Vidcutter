@@ -18,7 +18,11 @@ public static class VanillaHooks {
     private static void OnDeath(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader = false) {
         if (playerIntro == Player.IntroTypes.Respawn) {
             State.IsFromASavestate = false;
-            LogManager.Log("DEATH", session: self.Session);
+            if (State.LastEvent != null && State.LastEvent.IsCollectable()) {
+                LogManager.Log("DEATH AFTER COLLECTIBLE", session: self.Session);
+            } else {
+                LogManager.Log("DEATH", session: self.Session);
+            }
             State.LogWhenCloseToSpawnPoint = false;
         }
         orig(self, playerIntro, isFromLoader);
@@ -79,7 +83,9 @@ public static class VanillaHooks {
         float deltaX = Math.Abs(playerPos.X - respawnPoint.Value.X);
         double distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
         if (distance <= 50 && State.LogWhenCloseToSpawnPoint) {
-            LogManager.Log($"CLOSE TO SPAWNPOINT", session: self.SceneAs<Level>().Session);
+            if ((DateTime.Now - State.LastEvent.Time).TotalSeconds > 0.1) {
+                LogManager.Log($"CLOSE TO SPAWNPOINT", session: self.SceneAs<Level>().Session);
+            }
             State.LogWhenCloseToSpawnPoint = false;
         }
     }

@@ -73,7 +73,16 @@ public static class LogManager {
 
         string room = session.Level.Replace("|", "-");
         
-        WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {chapter} | {room} | {message} | {!State.IsFromASavestate}");
+        LoggedString log = new(DateTime.Now, message, chapter, room);
+
+        if (!State.IsFromASavestate && log.IsCleared()) {
+            if (State.LastEvent != null && !State.LastEvent.IsCleared()) {
+                WriteLine(State.LastEvent.ToString());
+            } 
+            WriteLine(log.ToString());
+        }
+
+        State.LastEvent = log;
     }
 
     public static List<LoggedString> GetAllLogs(VideoFile video, string level = null) {

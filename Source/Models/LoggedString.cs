@@ -9,10 +9,10 @@ public record LoggedString(
     string Event,
     string Level,
     string Room,
-    bool CountTowardsClear
+    bool? CountTowardsClear = null
 ) {
     private static readonly HashSet<string> ClearedEvents = [
-        "ROOM PASSED", "LEVEL COMPLETE", "CLOSE TO SPAWNPOINT"
+        "ROOM PASSED", "LEVEL COMPLETE", "CLOSE TO SPAWNPOINT", "DEATH AFTER COLLECTIBLE"
     ];
     
     private static readonly HashSet<string> CollectableEvents = [
@@ -22,12 +22,12 @@ public record LoggedString(
     public static LoggedString Parse(string line) {
         DateTime logTime = DateTime.Parse(line[1..24]);
         string[] loggedEvent = line[26..].Split(" | ");
-        bool countTowardsClear = loggedEvent.ElementAtOrDefault(3) == null || bool.Parse(loggedEvent[3]);
+        bool? countTowardsClear = loggedEvent.ElementAtOrDefault(3) != null ? bool.Parse(loggedEvent[3]) : null;
         return new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1], countTowardsClear);
     }
     
     public bool IsCleared() {
-        return ClearedEvents.Contains(Event) || CollectableEvents.Contains(Event);
+        return ClearedEvents.Contains(Event) || CollectableEvents.Contains(Event) || BackToStartOfInterRoom();
     }
     
     public bool IsCollectable() {
@@ -39,6 +39,6 @@ public record LoggedString(
     }
 
     public override string ToString() {
-        return $"[{Time:yyyy-MM-dd HH:mm:ss.fff}] {Level} | {Room} | {Event} | {CountTowardsClear}";
+        return $"[{Time:yyyy-MM-dd HH:mm:ss.fff}] {Level} | {Room} | {Event}" + (CountTowardsClear == null ? "" : $" | {CountTowardsClear}");
     }
 }

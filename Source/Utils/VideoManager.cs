@@ -10,6 +10,7 @@ namespace Celeste.Mod.Vidcutter.Utils;
 
 public static class VideoManager {
     private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
+    private static VidcutterState State => VidcutterModule.State;
 
     public static List<VideoFile> GetAllVideos() {
         List<LoggedString> logs = LogManager.GetAllLogs();
@@ -76,7 +77,7 @@ public static class VideoManager {
                 continue;
             }
 
-            if (nextLine != null && nextLine.Level == currentLine.Level && nextLine.IsCleared() && nextLine.CountTowardsClear) {
+            if (nextLine != null && nextLine.Level == currentLine.Level && nextLine.IsCleared() && nextLine.CountTowardsClear != false) {
                 logsForCurrentClip.Add(currentLine);
                 continue;
             }
@@ -86,12 +87,8 @@ public static class VideoManager {
             
             LoggedString clipEnd = currentLine;
 
-            if (clipEnd.IsCollectable() && nextLine?.Event == "DEATH") {
-                clipEnd = nextLine;
-            }
-
-            if (nextLine?.BackToStartOfInterRoom() == true) {
-                clipEnd = LastClearedLogToRoom(logsForCurrentClip, nextLine.Room);
+            if (clipEnd.BackToStartOfInterRoom()) {
+                clipEnd = LastClearedLogToRoom(logsForCurrentClip, clipEnd.Room);
                 if (clipEnd == null) {
                     logsForCurrentClip.Clear();
                     continue;
@@ -105,7 +102,7 @@ public static class VideoManager {
     }
 
     private static LoggedString LastClearedLogToRoom(List<LoggedString> logs, string room) {
-        return logs.LastOrDefault(log => log.Room == room && log.IsCleared());
+        return logs.LastOrDefault(log => log.Room == room && log.IsCleared() && !log.BackToStartOfInterRoom());
     }
 
     public static void ProcessLastLogFromStateWithTooltip() {
@@ -128,14 +125,13 @@ public static class VideoManager {
             return;
         }
 
-        List<LoggedString> logs = LogManager.GetAllLogs(lastVideoFile);
-        LoggedString stateLog = logs.LastOrDefault(log => log.Event.Contains("STATE"));
-        if (stateLog == null) {
+        LoggedString stateLog = State.LastState;
+        if (stateLog == null || !lastVideoFile.IsDuringVideo(stateLog.Time)) {
             Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_STATE_NOT_FOUND"));
             return;
         }
         
-        GameplayClip clip = new(stateLog, logs.Last());
+        GameplayClip clip = new(stateLog, State.LastEvent);
         
         TooltipWithProgress progress = TooltipWithProgress.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSING_VIDEO"));
         

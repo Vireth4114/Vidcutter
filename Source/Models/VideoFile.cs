@@ -129,6 +129,10 @@ public class VideoFile {
             writer.WriteLine($"{entry.Key} | {entry.Value}");
     }
 
+    public bool IsDuringVideo(DateTime dateTime) {
+        return GetCreationTime() <= dateTime && dateTime <= GetEndTime();
+    }
+
     public bool IsStillWriting() {
         return DateTime.Now - File.GetLastWriteTime(FilePath) < TimeSpan.FromSeconds(5);
     }
