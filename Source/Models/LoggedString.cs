@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Celeste.Mod.Vidcutter.Models;
 
@@ -17,6 +18,13 @@ public record LoggedString(
     private static readonly HashSet<string> CollectableEvents = [
         "BERRY", "CASSETTE", "HEART", "KEY", "SUMMIT_GEM"
     ];
+
+    public static LoggedString Parse(string line) {
+        DateTime logTime = DateTime.Parse(line[1..24]);
+        string[] loggedEvent = line[26..].Split(" | ");
+        bool countTowardsClear = loggedEvent.ElementAtOrDefault(3) == null || bool.Parse(loggedEvent[3]);
+        return new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1], countTowardsClear);
+    }
     
     public bool IsCleared() {
         return ClearedEvents.Contains(Event) || CollectableEvents.Contains(Event);

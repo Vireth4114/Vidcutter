@@ -81,22 +81,13 @@ public static class LogManager {
     }
 
     public static List<LoggedString> GetAllLogs(DateTime? startVideo = null, DateTime? endVideo = null, string level = null) {
-        string[] lines = GetAllLinesFromLogFile();
-        
-        List<LoggedString> parsedLines = new List<LoggedString>();
-        foreach (string line in lines) {
-            DateTime logTime = DateTime.Parse(line[1..24]);
-            string[] loggedEvent = line[26..].Split(" | ");
-                
-            if ((startVideo == null || startVideo <= logTime) &&
-                (endVideo == null || logTime <= endVideo) &&
-                (level == null || loggedEvent[0] == level))
-            {
-                bool countTowardsClear = loggedEvent.ElementAtOrDefault(3) == null || bool.Parse(loggedEvent[3]);
-                parsedLines.Add(new LoggedString(logTime, loggedEvent[2], loggedEvent[0], loggedEvent[1], countTowardsClear));
-            }
-        }
-        return parsedLines;
+        return GetAllLinesFromLogFile()
+            .Select(LoggedString.Parse)
+            .Where(log =>
+                (startVideo == null || startVideo <= log.Time) &&
+                (endVideo == null || log.Time <= endVideo) &&
+                (level == null || log.Level == level)
+            ).ToList();
     }
 
     public static void DeleteLogs(List<LevelInAVideo> rows){
