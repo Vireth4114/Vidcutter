@@ -75,7 +75,12 @@ public class VideoManagerTest {
             new(DateTime.Parse("18:40:08.752"), "ROOM PASSED", "Prologue", "0", true),
             new(DateTime.Parse("18:40:08.752"), "CLOSE TO SPAWNPOINT", "Prologue", "0", true),
             new(DateTime.Parse("18:40:15.312"), "ROOM PASSED", "Prologue", "1", true),
-            new(DateTime.Parse("18:40:15.312"), "CLOSE TO SPAWNPOINT", "Prologue", "1", true)
+            new(DateTime.Parse("18:40:15.312"), "CLOSE TO SPAWNPOINT", "Prologue", "1", true),
+            new(DateTime.Parse("18:40:16.312"), "RESTART CHAPTER", "Prologue", "1", true),
+            new(DateTime.Parse("18:40:28.752"), "ROOM PASSED", "Prologue", "0", true),
+            new(DateTime.Parse("18:40:28.752"), "CLOSE TO SPAWNPOINT", "Prologue", "0", true),
+            new(DateTime.Parse("18:40:35.312"), "ROOM PASSED", "Prologue", "1", true),
+            new(DateTime.Parse("18:40:35.312"), "CLOSE TO SPAWNPOINT", "Prologue", "1", true)
         ];
 
         List<GameplayClip> clips = VideoManager.ProcessLogs(logs);
@@ -111,8 +116,8 @@ public class VideoManagerTest {
                 new LoggedString(DateTime.Parse("18:39:58.712"), "CLOSE TO SPAWNPOINT", "Forsaken City", "3b", true)
             ),
             new(
-                new LoggedString(DateTime.Parse("18:40:08.752"), "ROOM PASSED", "Prologue", "0", true),
-                new LoggedString(DateTime.Parse("18:40:15.312"), "CLOSE TO SPAWNPOINT", "Prologue", "1", true)
+                new LoggedString(DateTime.Parse("18:40:28.752"), "ROOM PASSED", "Prologue", "0", true),
+                new LoggedString(DateTime.Parse("18:40:35.312"), "CLOSE TO SPAWNPOINT", "Prologue", "1", true)
             )
         ];
         

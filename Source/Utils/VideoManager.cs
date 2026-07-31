@@ -71,7 +71,7 @@ public static class VideoManager {
             LoggedString nextLine = i < parsedLines.Count - 1 ? parsedLines[i + 1] : null;
 
             if (currentLine.Event == "RESTART CHAPTER") {
-                processedClips.Clear();
+                processedClips = processedClips.Where(clip => clip.Level != currentLine.Level).ToList();
                 logsForCurrentClip.Clear();
                 continue;
             }
