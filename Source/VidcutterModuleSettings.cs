@@ -1,13 +1,8 @@
 using System;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
 using Celeste.Mod.UI;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
-using On.Celeste;
-using static Celeste.TextMenuExt;
+using Celeste.Mod.Vidcutter.UI;
+using Celeste.Mod.Vidcutter.Utils;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -32,7 +27,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     public float DelayEnd { get; set; } = 1.2f;
     public void CreateDelayEndEntry(TextMenu menu, bool inGame) {
         menu.Add(new TextMenu.Slider(Dialog.Clean("MODOPTIONS_VIDCUTTER_DELAYPASS"), i => $"{i/5.0}s", 0, 100, (int)(DelayEnd*5.0)) {
-            OnValueChange = (value) => {
+            OnValueChange = value => {
                 DelayEnd = value/5.0f;
             }
         });
@@ -42,7 +37,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     public int DelayComplete { get; set; } = 20;
     public void CreateDelayCompleteEntry(TextMenu menu, bool inGame) {
         menu.Add(new TextMenu.Slider(Dialog.Clean("MODOPTIONS_VIDCUTTER_DELAYCOMPLETE"), i => $"{i}s", 0, 300, DelayComplete) {
-            OnValueChange = (value) => {
+            OnValueChange = value => {
                 DelayComplete = value;
             }
         });
@@ -65,23 +60,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
         }
         menu.Add(new TextMenu.Button(Dialog.Clean("MODOPTIONS_VIDCUTTER_CUTVIDEOS")) {
             OnPressed = () => {
-            OuiVidcutterProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiVidcutterProgress>();
-                if (!Directory.Exists("./VidCutter/ffmpeg/ffmpeg")) {
-                    try {
-                        // Check for FFmpeg in PATH
-                        Process process = VideoCreation.createProcess("ffmpeg", "-version");
-                        process.Start();
-                        process.WaitForExit();
-                        FFmpegPath = "";
-                        OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
-                    } catch (Win32Exception) {
-                        progress.Init<OuiModOptions>(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"), new Task(() => {
-                            VidcutterModule.InstallFFmpeg(progress);
-                        }), 0);
-                        FFmpegPath = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-7.1-essentials_build", "bin") + "/";
-                    }
-                } else {
-                    FFmpegPath = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-7.1-essentials_build", "bin") + "/";
+                if (!FFmpegUtils.Initialize(() => OuiModOptions.Instance.Overworld.Goto<OuiFFmpegInstallProgress>())) {
                     OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
                 }
             }
