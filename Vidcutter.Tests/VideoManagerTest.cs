@@ -66,7 +66,7 @@ public class VideoManagerTest {
             new(DateTime.Parse("18:39:33.478"), "CLOSE TO SPAWNPOINT", "Forsaken City", "3", true),
             new(DateTime.Parse("18:39:36.602"), "DEATH", "Forsaken City", "3", true),
             new(DateTime.Parse("18:39:41.496"), "BERRY", "Forsaken City", "3", true),
-            new(DateTime.Parse("18:39:46.263"), "DEATH", "Forsaken City", "3", true),
+            new(DateTime.Parse("18:39:46.263"), "DEATH AFTER COLLECTIBLE", "Forsaken City", "3", true),
             new(DateTime.Parse("18:39:51.032"), "DEATH", "Forsaken City", "3", true),
             new(DateTime.Parse("18:39:55.195"), "ROOM PASSED", "Forsaken City", "4", true),
             new(DateTime.Parse("18:39:55.195"), "CLOSE TO SPAWNPOINT", "Forsaken City", "4", true),
@@ -109,7 +109,7 @@ public class VideoManagerTest {
             ),
             new(
                 new LoggedString(DateTime.Parse("18:39:36.602"), "DEATH", "Forsaken City", "3", true),
-                new LoggedString(DateTime.Parse("18:39:46.263"), "DEATH", "Forsaken City", "3", true)
+                new LoggedString(DateTime.Parse("18:39:46.263"), "DEATH AFTER COLLECTIBLE", "Forsaken City", "3", true)
             ),
             new(
                 new LoggedString(DateTime.Parse("18:39:51.032"), "DEATH", "Forsaken City", "3", true),
