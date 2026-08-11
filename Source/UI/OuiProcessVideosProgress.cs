@@ -45,7 +45,7 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
     }
 
     private int ProcessRow(LevelInAVideo levelInAVideo, StreamWriter clipsIndexWriter, int startIdx = 1) {
-        List<GameplayClip> clips = VideoManager.ProcessLogs(levelInAVideo);
+        List<GameplayClip> clips = VideoManager.ProcessLogs(levelInAVideo).FindAll(clip => clip.Duration > 0.2);
         VideoFile video = levelInAVideo.Video;
         int clipIdx = startIdx;
         foreach (GameplayClip clip in clips) {
