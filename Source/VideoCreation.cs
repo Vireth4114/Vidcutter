@@ -122,6 +122,7 @@ public class VideoCreation {
             }
             TimeSpan endTime = line[1].Time + TimeSpan.FromSeconds(delay) - startVideo;
             double clipDuration = (endTime - startTime).TotalSeconds;
+            if (clipDuration < 0.2) continue;
             string ss = $"{startTime:hh\\:mm\\:ss\\.fff}";
             string to = $"{endTime:hh\\:mm\\:ss\\.fff}";
             Logger.Info("Vidcutter", $"Processing clip from {ss} to {to}");
