@@ -24,6 +24,8 @@ public static class FFmpegUtils {
             return false;
         }
 
+        RemoveLegacyFFmpegIfItExists();
+
         string ffmpegBaseDir = Path.Combine(FileUtils.VidcutterWorkingDirectory, "ffmpeg");
         bool isInstalling = false;
         
@@ -35,6 +37,16 @@ public static class FFmpegUtils {
         _ffmpegDirectory = Path.Combine(ffmpegBaseDir, "bin") + Path.DirectorySeparatorChar;
         _initialized = true;
         return isInstalling;
+    }
+
+    private static void RemoveLegacyFFmpegIfItExists() {
+        string ffmpegBaseDir = Path.Combine(FileUtils.VidcutterWorkingDirectory, "ffmpeg");
+        string ffmpegBinDir = Path.Combine(ffmpegBaseDir, "bin");
+        if (Directory.Exists(ffmpegBaseDir) && !Directory.Exists(ffmpegBinDir)) {
+            Logger.Warn("Vidcutter",
+                $"FFmpeg directory {ffmpegBaseDir} exists but does not contain a bin directory. Reinstalling FFmpeg.");
+            Directory.Delete(ffmpegBaseDir, recursive: true);
+        }
     }
 
     public static void InstallFFmpeg() { InstallFFmpeg(null); }
