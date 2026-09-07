@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using Celeste.Mod.Vidcutter.Models;
+using Celeste.Mod.Vidcutter.Utils.Installers;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
@@ -31,7 +32,11 @@ public static class FFmpegUtils {
         
         if (!Directory.Exists(ffmpegBaseDir)) {
             isInstalling = true;
-            (installCallback ?? InstallFFmpeg)();
+            if (installCallback != null) {
+                installCallback();
+            } else {
+                InstallFFmpeg();
+            }
         }
 
         _ffmpegDirectory = Path.Combine(ffmpegBaseDir, "bin") + Path.DirectorySeparatorChar;
@@ -49,28 +54,16 @@ public static class FFmpegUtils {
         }
     }
 
-    public static void InstallFFmpeg() { InstallFFmpeg(null); }
-    
-    public static void InstallFFmpeg(Func<int, long, int, bool> progressCallback) {
-        string downloadFolder = FileUtils.VidcutterWorkingDirectory;
-        
-        string fileName = OperatingSystem.IsWindows()
-            ? "ffmpeg-master-latest-win64-gpl.zip"
-            : "ffmpeg-master-latest-linux64-gpl.tar.xz";
-
-        string downloadUrl = $"https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/{fileName}";
-        
-        string downloadPath = Path.Combine(downloadFolder, fileName);
-        string extractedPath = Path.Combine(downloadFolder, fileName.Split(".")[0]);
-        try {
-            Logger.Info("Vidcutter", $"Starting download of {downloadUrl}");
-            if (!FileUtils.DownloadFFmpegFromUrl(downloadUrl, downloadPath, progressCallback))
-                return;
-            FileUtils.ExtractArchive(downloadPath, downloadFolder, cleanArchive: true);
-            Directory.Move(extractedPath, Path.Combine(downloadFolder, "ffmpeg"));
-        } catch (Exception ex) {
-            Logger.Error("Vidcutter", ex.StackTrace+" "+ex.Message);
+    public static void InstallFFmpeg(Func<int, long, int, bool> progressCallback = null) {
+        FFmpegInstaller installer;
+        if (OperatingSystem.IsWindows()) {
+            installer = new WindowsFFmpegInstaller();
+        } else if (OperatingSystem.IsLinux()) {
+            installer = new LinuxFFmpegInstaller();
+        } else {
+            throw new PlatformNotSupportedException("FFmpeg installation is not supported on this platform.");
         }
+        installer.InstallFFmpeg(progressCallback);
     }
 
     private static bool IsFFmpegInPath() {
