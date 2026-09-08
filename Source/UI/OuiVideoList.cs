@@ -17,9 +17,8 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     private const float OnScreenX = 960f;
     private const float OffScreenX = 2880f;
     private float _alpha;
-    private readonly ObservableCollection<CustomButton> _toProcess = [];
-    private readonly List<CustomButton> _buttons = [];
-    private readonly Dictionary<LevelInAVideo, LoggedString> _lastLogRow = [];
+    private readonly ObservableCollection<LevelRow> _selectedRows = [];
+    private readonly List<LevelRow> _rows = [];
     
     private TextMenu _menu;
 
@@ -28,36 +27,27 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         if (oldMenu != null) {
             Scene.Remove(oldMenu);
         }
-        _menu = new TextMenu();
+        _menu = new TextMenu {
+            InnerContent = InnerContentMode.TwoColumn
+        };
 
-        _buttons.Clear();
-        _toProcess.Clear();
+        _rows.Clear();
+        _selectedRows.Clear();
 
         foreach (VideoFile video in VideoManager.GetAllVideos()) {
-            HashSet<LevelInAVideo> rowsForVideo = [];
-            List<GameplayClip> clips = VideoManager.ProcessLogs(video);
-            foreach (GameplayClip clip in clips) {
-                LevelInAVideo row = new LevelInAVideo(video.FileName, clip.Level);
-                rowsForVideo.Add(row);
-                _lastLogRow[row] = clip.End;
-            }
-            Logger.Info("Vidcutter", $"Video {video.FileName} has {rowsForVideo.Count} levels and {clips.Count} clips");
-            foreach (var button in rowsForVideo.Select(GetButtonForRow)) {
-                CustomEaseIn videoLabel = new CustomEaseIn(video.FileName, false, _menu) {
-                    TextColor = Color.Gray,
-                    HeightExtra = 0f
-                };
-
-                button.OnEnter += () => videoLabel.FadeVisible = true;
-                button.OnLeave += () => videoLabel.FadeVisible = false;
-                
-                _buttons.Add(button);
-                _menu.Add(button);
-                _menu.Add(videoLabel);
+            HashSet<LevelInAVideo> rowsForVideo = VideoManager.ProcessLogs(video)
+                .GroupBy(clip => clip.Level)
+                .Select(g => new LevelInAVideo(video.FileName, g.Key) { LastLog = g.Last().End })
+                .ToHashSet();
+            Logger.Info("Vidcutter", $"Video {video.FileName} has {rowsForVideo.Count} levels");
+            foreach (LevelRow row in rowsForVideo.Select(GetLevelRow)) {
+                _rows.Add(row);
+                _menu.Add(row);
+                _menu.Add(row.SubHeader);
             }
         }
 
-        if (_buttons.Count == 0) {
+        if (_rows.Count == 0) {
             _menu.Add(new SubHeader(Dialog.Clean("VIDCUTTER_NOVIDEO")));
         } else {
             _menu.Add(GetProcessButton());
@@ -73,42 +63,34 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         Scene.Add(_menu);
     }
 
-    private CustomButton GetButtonForRow(LevelInAVideo levelInAVideo) {
-        string completion;
-        LoggedString lastLog = _lastLogRow[levelInAVideo];
-        if (lastLog.Event == "LEVEL COMPLETE") {
-            completion = Dialog.Clean("VIDCUTTER_LEVEL_CLEARED");
-        } else {
-            completion = Dialog.Clean("VIDCUTTER_LEVEL_UNTIL") + $" {lastLog.Room}";
-        }
-        string rowName = $"{levelInAVideo.Level} ({completion})";
-                
-        CustomButton button = new CustomButton(rowName, levelInAVideo);
-        button.OnPressed += () => {
-            if (!_toProcess.Remove(button)) {
-                _toProcess.Add(button);
-            }
-
-            UpdateEveryButtonsState();
-        };
-        return button;
+    private LevelRow GetLevelRow(LevelInAVideo levelInAVideo) {
+        LevelRow row = new(levelInAVideo);
+        row.OnPressed += () => ToggleRow(row);
+        return row;
     }
 
-    private void UpdateEveryButtonsState() {
-        foreach (CustomButton b in _buttons) {
-            int index = _toProcess.IndexOf(b);
-            b.LabelIndex = index >= 0 ? $"{index + 1}." : "";
-            b.Colored = index >= 0;
+    private void ToggleRow(LevelRow row) {
+        if (!_selectedRows.Remove(row)) {
+            _selectedRows.Add(row);
+        }
+
+        SynchronizeRowIndices();
+    }
+
+    private void SynchronizeRowIndices() {
+        foreach (LevelRow row in _rows) {
+            row.Index = _selectedRows.IndexOf(row);
         }
     }
 
     private Button GetButton(string label, Action onPressed) {
-        Button button = new Button(label) {
+        Button button = new(label) {
             OnPressed = onPressed,
-            Disabled = true
+            Disabled = true,
+            AlwaysCenter = true
         };
-        _toProcess.CollectionChanged += (_, _) => {
-            button.Disabled = _toProcess.Count == 0;
+        _selectedRows.CollectionChanged += (_, _) => {
+            button.Disabled = _selectedRows.Count == 0;
         };
         return button;
     }
@@ -117,7 +99,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     private Button GetProcessButton() {
         return GetButton(Dialog.Clean("VIDCUTTER_PROCESS"), () => {
             OuiModOptions.Instance.Overworld.Goto<OuiProcessVideosProgress>().Configure(
-                rowsToProcess: _toProcess.Select(button => button.Data).ToList(),
+                rowsToProcess: _selectedRows.Select(button => button.Data).ToList(),
                 deleteAfterProcess: false
             );
         });
@@ -126,7 +108,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     private Button GetProcessAndDeleteButton() {
         return GetButton(Dialog.Clean("VIDCUTTER_PROCESS_AND_DELETE"), () => {
             OuiModOptions.Instance.Overworld.Goto<OuiProcessVideosProgress>().Configure(
-                rowsToProcess: _toProcess.Select(button => button.Data).ToList(),
+                rowsToProcess: _selectedRows.Select(button => button.Data).ToList(),
                 deleteAfterProcess: true
             );
         });
@@ -134,7 +116,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
 
     private Button GetDeleteButton() {
         return GetButton(Dialog.Clean("VIDCUTTER_DELETE"), () => {
-            LogManager.DeleteLogs(_toProcess.Select(button => button.Data).ToList());
+            LogManager.DeleteLogs(_selectedRows.Select(button => button.Data).ToList());
             OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
         });
     }
@@ -163,8 +145,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         }
 
         for (float p = 0f; p < 1f; p += Engine.DeltaTime * 4f) {
-            if (_menu != null)
-                _menu.X = OnScreenX + 1920f * Ease.CubeIn(p);
+            _menu?.X = OnScreenX + 1920f * Ease.CubeIn(p);
             _alpha = 1f - Ease.CubeIn(p);
             yield return null;
         }
