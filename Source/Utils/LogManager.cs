@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using Celeste.Mod.Vidcutter.Models;
+using static Celeste.Mod.Vidcutter.Utils.FileUtils;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
@@ -13,7 +14,7 @@ public static class LogManager {
     private static bool _initialized;
 
     public static void Initialize() {
-        string logFolder = Path.Combine(FileUtils.VidcutterWorkingDirectory, Path.Combine("logs"));
+        string logFolder = Path.Combine(VidcutterWorkingDirectory, Path.Combine("logs"));
         if (!Directory.Exists(logFolder)) {
             Directory.CreateDirectory(logFolder);
         }
@@ -22,7 +23,7 @@ public static class LogManager {
     }
 
     public static void OpenWriter() {
-        _logFileWriter = new StreamWriter(FileUtils.LogFile, true) {
+        _logFileWriter = new StreamWriter(LogFile, true) {
             AutoFlush = true
         };
     }
@@ -39,14 +40,14 @@ public static class LogManager {
 
     private static string[] GetAllLinesFromLogFile() {
         CloseWriter();
-        string[] lines = File.ReadAllLines(FileUtils.LogFile);
+        string[] lines = File.ReadAllLines(LogFile);
         OpenWriter();
         return lines;
     }
 
     private static void RewriteLogFileWith(string[] lines) {
         CloseWriter();
-        using (StreamWriter writer = new StreamWriter(FileUtils.LogFile, false)) {
+        using (StreamWriter writer = new StreamWriter(LogFile, false)) {
             foreach (string line in lines)
                 writer.WriteLine(line);
         }
@@ -103,7 +104,7 @@ public static class LogManager {
         List<LoggedString> allLogs = GetAllLogs();
         
         foreach (LevelInAVideo row in rows) {
-            VideoFile video = VideoFile.Get(row.VideoName);
+            VideoFile video = VideoFile.Get(VideoManager.GetFullFilePath(row.VideoName));
             
             string level = row.Level;
             DateTime startVideo = video.GetCreationTime();

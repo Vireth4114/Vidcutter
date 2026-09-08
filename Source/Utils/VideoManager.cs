@@ -23,6 +23,7 @@ public static class VideoManager {
         
         List<VideoFile> videos = allFiles
             .Select(Path.GetFileName)
+            .Select(GetFullFilePath)
             .Select(VideoFile.Get)
             .Where(video => video.GetEndTime() >= firstLog)
             .ToList();
@@ -61,7 +62,11 @@ public static class VideoManager {
     }
 
     public static List<GameplayClip> ProcessLogs(LevelInAVideo levelInAVideo) {
-        return ProcessLogs(LogManager.GetAllLogs(levelInAVideo.Video, levelInAVideo.Level));
+        return ProcessLogs(LogManager.GetAllLogs(VideoFile.Get(GetFullFilePath(levelInAVideo.VideoName)), levelInAVideo.Level));
+    }
+
+    public static string GetFullFilePath(string fileName) {
+        return  Path.Combine(Settings.VideoFolder, fileName);
     }
 
     public static List<GameplayClip> ProcessLogs(List<LoggedString> parsedLines) {
@@ -119,7 +124,7 @@ public static class VideoManager {
             return;
         }
         
-        VideoFile lastVideoFile = VideoFile.Get(lastVideo);
+        VideoFile lastVideoFile = VideoFile.Get(GetFullFilePath(lastVideo));
         if (!lastVideoFile.CanBeProcessed) {
             Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_INVALID_FORMAT_FOR_CLIPPING"));
             return;

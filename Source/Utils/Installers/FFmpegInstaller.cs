@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using static Celeste.Mod.Vidcutter.Utils.FileUtils;
 
 namespace Celeste.Mod.Vidcutter.Utils.Installers;
 
@@ -8,7 +9,7 @@ public abstract class FFmpegInstaller {
     protected abstract string FileName { get; }
     
     public void InstallFFmpeg(Func<int, long, int, bool> progressCallback) {
-        string downloadFolder = FileUtils.VidcutterWorkingDirectory;
+        string downloadFolder = VidcutterWorkingDirectory;
         
         string downloadUrl = $"{BaseDownloadUrl}/{FileName}";
         

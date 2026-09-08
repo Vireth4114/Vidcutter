@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using Celeste.Mod.UI;
 using Celeste.Mod.Vidcutter.UI;
-using Celeste.Mod.Vidcutter.Utils;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -60,9 +59,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
         }
         menu.Add(new TextMenu.Button(Dialog.Clean("MODOPTIONS_VIDCUTTER_CUTVIDEOS")) {
             OnPressed = () => {
-                if (!FFmpegUtils.Initialize(() => OuiModOptions.Instance.Overworld.Goto<OuiFFmpegInstallProgress>())) {
-                    OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
-                }
+                OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
             }
         });
     }

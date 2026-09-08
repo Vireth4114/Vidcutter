@@ -122,6 +122,9 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     }
 
     public override IEnumerator Enter(Oui from) {
+        if (FFmpegUtils.Initialize(() => OuiModOptions.Instance.Overworld.Goto<OuiFFmpegInstallProgress>())) {
+            yield break;
+        }
         Visible = true;
 
         ReloadMenu();

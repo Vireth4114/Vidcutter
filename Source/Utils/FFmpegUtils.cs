@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Utils.Installers;
+using static Celeste.Mod.Vidcutter.Utils.FileUtils;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
@@ -27,7 +28,7 @@ public static class FFmpegUtils {
 
         RemoveLegacyFFmpegIfItExists();
 
-        string ffmpegBaseDir = Path.Combine(FileUtils.VidcutterWorkingDirectory, "ffmpeg");
+        string ffmpegBaseDir = Path.Combine(VidcutterWorkingDirectory, "ffmpeg");
         bool isInstalling = false;
         
         if (!Directory.Exists(ffmpegBaseDir)) {
@@ -45,7 +46,7 @@ public static class FFmpegUtils {
     }
 
     private static void RemoveLegacyFFmpegIfItExists() {
-        string ffmpegBaseDir = Path.Combine(FileUtils.VidcutterWorkingDirectory, "ffmpeg");
+        string ffmpegBaseDir = Path.Combine(VidcutterWorkingDirectory, "ffmpeg");
         string ffmpegBinDir = Path.Combine(ffmpegBaseDir, "bin");
         if (Directory.Exists(ffmpegBaseDir) && !Directory.Exists(ffmpegBinDir)) {
             Logger.Warn("Vidcutter",

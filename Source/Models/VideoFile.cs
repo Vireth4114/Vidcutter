@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Celeste.Mod.Vidcutter.Utils;
+using static Celeste.Mod.Vidcutter.Utils.FileUtils;
 
 namespace Celeste.Mod.Vidcutter.Models;
 
 public class VideoFile {
-    private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
     private static readonly Dictionary<string, TimeSpan> DurationCache = new();
     private static readonly Dictionary<string, VideoFile> VideoFileCache = new();
 
@@ -20,11 +20,11 @@ public class VideoFile {
     private DateTime? _cachedEndTime;
 
     public static void LoadDurationCache() {
-        if (!File.Exists(FileUtils.DurationCacheFile))
+        if (!File.Exists(DurationCacheFile))
             return;
 
         DurationCache.Clear();
-        string[] lines = File.ReadAllLines(FileUtils.DurationCacheFile);
+        string[] lines = File.ReadAllLines(DurationCacheFile);
         foreach (string line in lines) {
             string[] parts = line.Split(" | ");
             if (parts.Length == 2) {
@@ -44,9 +44,7 @@ public class VideoFile {
         TryGetVideoDurationFromMetadata(out TimeSpan _); // Cache duration at initialization as it is always used, to check immediately if the file can be processed
     }
 
-    public static VideoFile Get(string fileName) {
-        string filePath = Path.Combine(Settings.VideoFolder, fileName);
-
+    public static VideoFile Get(string filePath) {
         if (VideoFileCache.TryGetValue(filePath, out VideoFile cachedVideoFile))
             return cachedVideoFile;
 
@@ -124,7 +122,7 @@ public class VideoFile {
         if (!DurationCache.TryAdd(video, duration))
             return;
         
-        using StreamWriter writer = new StreamWriter(FileUtils.DurationCacheFile, false);
+        using StreamWriter writer = new StreamWriter(DurationCacheFile, false);
         foreach (KeyValuePair<string, TimeSpan> entry in DurationCache)
             writer.WriteLine($"{entry.Key} | {entry.Value}");
     }
