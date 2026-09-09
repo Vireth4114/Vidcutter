@@ -47,7 +47,7 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
 
     private int ProcessRow(LevelInAVideo levelInAVideo, StreamWriter clipsIndexWriter, int startIdx = 1) {
         List<GameplayClip> clips = VideoManager.ProcessLogs(levelInAVideo).FindAll(clip => clip.Duration > 0.2);
-        VideoFile video = VideoFile.Get(VideoManager.GetFullFilePath(levelInAVideo.VideoName));
+        VideoFile video = VideoFileManager.Get(VideoManager.GetFullFilePath(levelInAVideo.VideoName));
         int clipIdx = startIdx;
         foreach (GameplayClip clip in clips) {
             Progress = 0;
@@ -58,8 +58,8 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
                 
             FFmpegUtils.CutClip(
                 video, 
-                clip.StartTimeWithDelay - video.GetCreationTime(), 
-                clip.EndTimeWithDelay - video.GetCreationTime(),
+                clip.StartTimeWithDelay - video.CreationTime, 
+                clip.EndTimeWithDelay - video.CreationTime,
                 output: Path.Combine(VidcutterWorkingDirectory, videoName),
                 onProgress: timeProcessed => {
                     Progress = (int)(timeProcessed.TotalSeconds / clip.Duration * 100);

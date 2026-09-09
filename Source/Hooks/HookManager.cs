@@ -5,11 +5,13 @@ public static class HookManager {
         VanillaHooks.Load();
         VivHelperHooks.Load();
         SpeedrunToolHooks.Load();
+        LogFileHooks.Load();
     }
 
     public static void UnloadAll() {
         VanillaHooks.Unload();
         VivHelperHooks.Unload();
         SpeedrunToolHooks.Unload();
+        LogFileHooks.Unload();
     } 
 }

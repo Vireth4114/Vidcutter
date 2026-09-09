@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Celeste.Mod.Vidcutter.Entities;
 using Celeste.Mod.Vidcutter.Models;
+using Celeste.Mod.Vidcutter.Exceptions;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
@@ -24,8 +25,8 @@ public static class VideoManager {
         List<VideoFile> videos = allFiles
             .Select(Path.GetFileName)
             .Select(GetFullFilePath)
-            .Select(VideoFile.Get)
-            .Where(video => video.GetEndTime() >= firstLog)
+            .Select(VideoFileManager.Get)
+            .Where(video => video.EndTime >= firstLog)
             .ToList();
         
         Logger.Info("Vidcutter", $"{videos.Count}/{allFiles.Length} videos in {Settings.VideoFolder} are after start of log");
@@ -62,7 +63,7 @@ public static class VideoManager {
     }
 
     public static List<GameplayClip> ProcessLogs(LevelInAVideo levelInAVideo) {
-        return ProcessLogs(LogManager.GetAllLogs(VideoFile.Get(GetFullFilePath(levelInAVideo.VideoName)), levelInAVideo.Level));
+        return ProcessLogs(LogManager.GetAllLogs(VideoFileManager.Get(GetFullFilePath(levelInAVideo.VideoName)), levelInAVideo.Level));
     }
 
     public static string GetFullFilePath(string fileName) {
@@ -100,7 +101,7 @@ public static class VideoManager {
                 }
             }
         
-            processedClips.Add(new GameplayClip(logsForCurrentClip[0], clipEnd));
+            processedClips.Add(GetGameplayClip(logsForCurrentClip[0], clipEnd));
             logsForCurrentClip.Clear();
         }
         return processedClips;
@@ -110,33 +111,34 @@ public static class VideoManager {
         return logs.LastOrDefault(log => log.Room == room && log.IsCleared() && !log.BackToStartOfInterRoom());
     }
 
+    private static GameplayClip GetGameplayClip(LoggedString start, LoggedString end) {
+        return new GameplayClip(
+            start,
+            end,
+            Settings.DelayStart,
+            end.Event == "LEVEL COMPLETE" ? Settings.DelayComplete : Settings.DelayEnd
+        );
+    }
+
     public static void ProcessLastLogFromStateWithTooltip() {
-        if (!Directory.Exists(Settings.VideoFolder)) {
-            Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_VIDEO_FOLDER_NOT_FOUND"));
-            return;
-        }
+        if (!Directory.Exists(Settings.VideoFolder))
+            throw new VideoProcessingException("VIDCUTTER_TOOLTIP_VIDEO_FOLDER_NOT_FOUND");
         
         string lastVideo = Directory.GetFiles(Settings.VideoFolder)
             .OrderByDescending(File.GetLastWriteTime)
             .FirstOrDefault();
-        if (lastVideo == null) {
-            Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_VIDEO_NOT_FOUND"));
-            return;
-        }
+        if (lastVideo == null)
+            throw new VideoProcessingException("VIDCUTTER_TOOLTIP_VIDEO_NOT_FOUND");
         
-        VideoFile lastVideoFile = VideoFile.Get(GetFullFilePath(lastVideo));
-        if (!lastVideoFile.CanBeProcessed) {
-            Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_INVALID_FORMAT_FOR_CLIPPING"));
-            return;
-        }
+        VideoFile lastVideoFile = VideoFileManager.Get(GetFullFilePath(lastVideo));
+        if (!lastVideoFile.CanBeProcessed)
+            throw new VideoProcessingException("VIDCUTTER_TOOLTIP_INVALID_FORMAT_FOR_CLIPPING");
 
         LoggedString stateLog = State.LastState;
-        if (stateLog == null || !lastVideoFile.IsDuringVideo(stateLog.Time)) {
-            Tooltip.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_STATE_NOT_FOUND"));
-            return;
-        }
+        if (stateLog == null || !lastVideoFile.IsDuringVideo(stateLog.Time))
+            throw new VideoProcessingException("VIDCUTTER_TOOLTIP_STATE_NOT_FOUND");
         
-        GameplayClip clip = new(stateLog, State.LastEvent);
+        GameplayClip clip = GetGameplayClip(stateLog, State.LastEvent);
         
         TooltipWithProgress progress = TooltipWithProgress.Show(Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSING_VIDEO"));
         
@@ -152,8 +154,8 @@ public static class VideoManager {
         
         FFmpegUtils.NonBlockingCutClip(
             video, 
-            clip.StartTimeWithDelay - video.GetCreationTime(), 
-            clip.EndTimeWithDelay - video.GetCreationTime(),
+            clip.StartTimeWithDelay - video.CreationTime, 
+            clip.EndTimeWithDelay - video.CreationTime,
             output,
             onProgress: timeProcessed => {
                 progress.Progress = (float) (timeProcessed.TotalSeconds / clip.Duration);

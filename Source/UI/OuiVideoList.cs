@@ -37,7 +37,10 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         foreach (VideoFile video in VideoManager.GetAllVideos()) {
             HashSet<LevelInAVideo> rowsForVideo = VideoManager.ProcessLogs(video)
                 .GroupBy(clip => clip.Level)
-                .Select(g => new LevelInAVideo(video.FileName, g.Key) { LastLog = g.Last().End })
+                .Select(g => new LevelInAVideo(video.FileName, g.Key) {
+                    FirstLog = g.First().Start,
+                    LastLog = g.Last().End
+                })
                 .ToHashSet();
             Logger.Info("Vidcutter", $"Video {video.FileName} has {rowsForVideo.Count} levels");
             foreach (LevelRow row in rowsForVideo.Select(GetLevelRow)) {

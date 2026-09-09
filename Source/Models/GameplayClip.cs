@@ -2,15 +2,10 @@ using System;
 
 namespace Celeste.Mod.Vidcutter.Models;
 
-public record GameplayClip(LoggedString Start, LoggedString End)
-{
-    private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
-    
-    public DateTime StartTimeWithDelay => Start.Time + TimeSpan.FromSeconds(Settings.DelayStart);
-    
-    public DateTime EndTimeWithDelay => End.Time + TimeSpan.FromSeconds(
-        End.Event == "LEVEL COMPLETE" ? Settings.DelayComplete : Settings.DelayEnd
-    );
+public record GameplayClip(LoggedString Start, LoggedString End, float StartDelay = 0, float EndDelay = 0) {
+    public DateTime StartTimeWithDelay => Start.Time + TimeSpan.FromSeconds(StartDelay);
+
+    public DateTime EndTimeWithDelay => End.Time + TimeSpan.FromSeconds(EndDelay);
 
     public double Duration => (EndTimeWithDelay - StartTimeWithDelay).TotalSeconds;
 

@@ -1,7 +1,5 @@
 ﻿using System;
 using Celeste.Mod.Vidcutter.Hooks;
-using Celeste.Mod.Vidcutter.Models;
-using Celeste.Mod.Vidcutter.Utils;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -19,13 +17,10 @@ public class VidcutterModule : EverestModule {
     }
 
     public override void Load() {
-        LogManager.Initialize();
         HookManager.LoadAll();
-        VideoFile.LoadDurationCache();
     }
 
     public override void Unload() {
-        LogManager.CloseWriter();
         HookManager.UnloadAll();
     }
 }

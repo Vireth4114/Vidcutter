@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using Celeste.Mod.Vidcutter.Entities;
 using Celeste.Mod.Vidcutter.Utils;
+using Celeste.Mod.Vidcutter.Exceptions;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -92,7 +94,11 @@ public static class VanillaHooks {
 
     private static void OnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
         if (Settings.CutFromLastSaveState.Pressed) {
-            VideoManager.ProcessLastLogFromStateWithTooltip();
+            try {
+                VideoManager.ProcessLastLogFromStateWithTooltip();
+            } catch (VideoProcessingException exception) {
+                Tooltip.Show(Dialog.Clean(exception.DialogId));
+            }
         }
         orig(self, gameTime);
     }
