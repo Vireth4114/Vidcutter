@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Celeste.Mod.Vidcutter.Utils;
+using Celeste.Mod.Vidcutter.Utils.Logs;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.ModInterop;
@@ -30,9 +30,9 @@ public static class SpeedrunToolHooks {
     private static void OnLoadState(Level level) {
         Vector2? playerPosition = level.Tracker.GetEntity<Player>()?.Position;
         if (playerPosition == level.Session.RespawnPoint) {
-            LogManager.Log("STATE ON RESPAWN POINT", session: level.Session);
+            LogService.Log("STATE ON RESPAWN POINT", session: level.Session);
         } else {   
-            LogManager.Log("STATE", session: level.Session);
+            LogService.Log("STATE", session: level.Session);
             State.IsFromASavestate = true;
         }
         State.LastState = State.LastEvent;

@@ -1,6 +1,9 @@
+using System.IO;
+
 namespace Celeste.Mod.Vidcutter.Models;
 
-public record LevelInAVideo(string VideoName, string Level) {
+public record LevelInAVideo(string VideoPath, string Level) {
+    public string VideoName => Path.GetFileName(VideoPath);
     public LoggedString FirstLog { get; init; }
     public LoggedString LastLog { get; init; }
     

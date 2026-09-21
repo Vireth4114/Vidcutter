@@ -1,27 +1,59 @@
 using System;
 using System.Collections;
 using System.Linq;
+using System.Threading.Tasks;
+using Celeste.Mod.Vidcutter.Utils;
 using Microsoft.Xna.Framework;
 using Monocle;
 
 namespace Celeste.Mod.Vidcutter.Entities;
 
-public class TooltipWithProgress(string message) : Tooltip(message, 0) {
-    public float Progress = 0f;
-    private bool _isLoading;
+public class TooltipWithProgress : Tooltip, IProgress {
     private float _startLine;
     private float _endLine;
+    private bool _loading;
+
+    public Task Task { get; set; }
+    public float Progress { get; set; }
+    public event Action OnComplete;
+
+    public void Start() {
+        Task.Start();
+        Task.ContinueWith(t => {
+            if (t.IsFaulted) {
+                SimpleTooltip.Show(t.Exception.InnerExceptions.First().Message, 5f);
+            } else if (t.IsCompletedSuccessfully) {
+                OnComplete?.Invoke();
+            }
+        });
+    }
+
+    public void StartAfterDelay(float delay) {
+        if (delay > 0) {
+            Add(new Coroutine(StartAfterDelayCoroutine(delay)));
+        } else {
+            Start();
+        }
+    }
+
+    private IEnumerator StartAfterDelayCoroutine(float delay) {
+        _loading = true;
+        yield return delay;
+        _loading = false;
+        Start();
+    }
 
     protected override IEnumerator Dismiss() {
-        while (Progress < 1f) {
+        while (Task.Status != TaskStatus.RanToCompletion && Task.Status != TaskStatus.Faulted) {
             yield return null;
         }
-        yield return base.Dismiss();
+
+        RemoveSelf();
     }
 
     public override void Render() {
         base.Render();
-        if (_isLoading) {
+        if (_loading) {
             _startLine = (_startLine + Engine.RawDeltaTime) % 1f;
             _endLine = (_startLine + 0.3f) % 1f;
         } else {
@@ -36,28 +68,13 @@ public class TooltipWithProgress(string message) : Tooltip(message, 0) {
         }
     }
 
-    public void AddLoadingDelay(float delay, Action onComplete = null) {
-        if (delay > 0) {
-            Add(new Coroutine(LoadingDelay(delay, onComplete)));
-        } else {
-            onComplete?.Invoke();
-        }
-    }
-
-    private IEnumerator LoadingDelay(float delay, Action onComplete = null) {
-        _isLoading = true;
-        yield return delay;
-        _isLoading = false;
-        onComplete?.Invoke();
-    }
-
-    public static TooltipWithProgress Show(string message) {
+    public static TooltipWithProgress Get() {
         if (Engine.Scene is not { } scene) return null;
         scene.Entities
             .FindAll<Tooltip>()
             .ToList()
             .ForEach(entity => entity.RemoveSelf());
-        TooltipWithProgress progress = new(message);
+        TooltipWithProgress progress = new();
         scene.Add(progress);
         return progress;
     }

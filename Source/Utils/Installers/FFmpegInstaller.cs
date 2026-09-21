@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using static Celeste.Mod.Vidcutter.Utils.FileUtils;
+using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
 namespace Celeste.Mod.Vidcutter.Utils.Installers;
 

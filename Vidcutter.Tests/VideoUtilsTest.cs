@@ -9,8 +9,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Vidcutter.Tests;
 
 [TestClass]
-[TestSubject(typeof(VideoManager))]
-public class VideoManagerTest {
+[TestSubject(typeof(VideoUtils))]
+public class VideoUtilsTest {
     
     
     [TestMethod]
@@ -83,7 +83,8 @@ public class VideoManagerTest {
             new(DateTime.Parse("18:40:35.312"), "CLOSE TO SPAWNPOINT", "Prologue", "1", true)
         ];
 
-        List<GameplayClip> clips = VideoManager.ProcessLogs(logs);
+        ClipProcessor processor = new();
+        List<GameplayClip> clips = processor.GetClipsFromLogs(logs);
 
         List<GameplayClip> expectedClips =
         [

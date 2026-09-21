@@ -1,6 +1,6 @@
 using System;
 using System.Reflection;
-using Celeste.Mod.Vidcutter.Utils;
+using Celeste.Mod.Vidcutter.Utils.Logs;
 using Microsoft.Xna.Framework;
 using MonoMod.RuntimeDetour;
 
@@ -18,7 +18,7 @@ public static class VivHelperHooks {
         Level returnValue = orig(level);
         Vector2? newRespawnPoint = returnValue.Session.RespawnPoint;
         if (respawnPoint != newRespawnPoint) {
-            LogManager.Log($"BACK TO START OF INTER ROOM", session: level.Session);
+            LogService.Log($"BACK TO START OF INTER ROOM", session: level.Session);
             State.PreviousRespawnPoint = newRespawnPoint;
         }
         return returnValue;

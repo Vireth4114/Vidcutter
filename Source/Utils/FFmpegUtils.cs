@@ -2,13 +2,14 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Utils.Installers;
-using static Celeste.Mod.Vidcutter.Utils.FileUtils;
+using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
 public static class FFmpegUtils {
+    private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
+    
     private static string _ffmpegDirectory;
     private static bool _initialized;
 
@@ -45,6 +46,15 @@ public static class FFmpegUtils {
         return isInstalling;
     }
 
+    private static bool IsFFmpegInPath() {
+        try {
+            CommandUtils.RunProcess("ffmpeg", "-version");
+            return true;
+        } catch (Win32Exception) {
+            return false;
+        }
+    }
+
     private static void RemoveLegacyFFmpegIfItExists() {
         string ffmpegBaseDir = Path.Combine(VidcutterWorkingDirectory, "ffmpeg");
         string ffmpegBinDir = Path.Combine(ffmpegBaseDir, "bin");
@@ -66,15 +76,6 @@ public static class FFmpegUtils {
         }
         installer.InstallFFmpeg(progressCallback);
     }
-
-    private static bool IsFFmpegInPath() {
-        try {
-            CommandUtils.RunProcess("ffmpeg", "-version");
-            return true;
-        } catch (Win32Exception) {
-            return false;
-        }
-    }
     
     private static Process FFmpeg(string arguments, bool redirectOutput = false) {
         if (!_initialized) Initialize();
@@ -92,13 +93,13 @@ public static class FFmpegUtils {
         process.WaitForExit();
     }
 
-    public static Process NonBlockingCutClip(VideoFile video, TimeSpan startClip, TimeSpan endClip, string output, Action<TimeSpan> onProgress = null) {
+    public static Process NonBlockingCutClip(string videoPath, TimeSpan startClip, TimeSpan endClip, string output, Action<TimeSpan> onProgress = null) {
         string ss = $@"{startClip:hh\:mm\:ss\.fff}";
         string to = $@"{endClip:hh\:mm\:ss\.fff}";
         
         Process process = FFmpeg(
-            $"-ss {ss} -to {to} -i \"{video.FilePath}\" -c:a copy -map 0 -vcodec libx264 " +
-            $"-crf {VidcutterModule.Settings.CRF} -preset veryfast -y \"{output}\" -v warning -progress pipe:1",
+            $"-ss {ss} -to {to} -i \"{videoPath}\" -c:a copy -map 0 -vcodec libx264 " +
+            $"-crf {Settings.Crf} -preset veryfast -y \"{output}\" -v warning -progress pipe:1",
             redirectOutput: onProgress != null
         );
         
@@ -119,16 +120,16 @@ public static class FFmpegUtils {
         return process;
     }
 
-    public static void CutClip(VideoFile video, TimeSpan startClip, TimeSpan endClip, string output, Action<TimeSpan> onProgress = null) {
-        Process process = NonBlockingCutClip(video, startClip, endClip, output, onProgress);
+    public static void CutClip(string videoPath, TimeSpan startClip, TimeSpan endClip, string output, Action<TimeSpan> onProgress = null) {
+        Process process = NonBlockingCutClip(videoPath, startClip, endClip, output, onProgress);
         process.WaitForExit();
     }
 
     public static string GetDurationString(string filePath) {
-        Process process = FFprobe($"-i \"{filePath}\" -show_entries format=duration -v quiet -of csv=\"p=0\"");
+        Process process = FFprobe($"-i \"{filePath}\" -show_entries format=duration -v error -of csv=\"p=0\"");
         process.Start();
         string strDuration = process.StandardOutput.ReadToEnd();
-        string strError =  process.StandardError.ReadToEnd();
+        string strError = process.StandardError.ReadToEnd();
         if (strError.Length > 0) {
             throw new InvalidOperationException($"ffprobe returned an error for file {filePath}: {strError}");
         }

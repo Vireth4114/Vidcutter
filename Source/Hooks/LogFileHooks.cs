@@ -1,16 +1,16 @@
-using Celeste.Mod.Vidcutter.Utils;
+using Celeste.Mod.Vidcutter.Utils.Logs;
 
 namespace Celeste.Mod.Vidcutter.Hooks;
 
-public class LogFileHooks {
+public static class LogFileHooks {
     private static void OnLevelBegin(On.Celeste.Level.orig_Begin orig, Level self) {
-        LogManager.OpenWriter();
+        LogService.SwitchToWriter();
         orig(self);
     }
     
     private static void OnLevelEnd(On.Celeste.Level.orig_End orig, Level self) {
         orig(self);
-        LogManager.CloseWriter();
+        LogService.SwitchToReader();
     }
     
     public static void Load() {

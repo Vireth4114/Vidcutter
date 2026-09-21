@@ -6,13 +6,19 @@ using System.Threading.Tasks;
 using Celeste.Mod.UI;
 using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Utils;
-using static Celeste.Mod.Vidcutter.Utils.FileUtils;
+using Celeste.Mod.Vidcutter.Utils.Logs;
+using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
 namespace Celeste.Mod.Vidcutter.UI;
 
 public class OuiProcessVideosProgress : OuiLoggedProgress {
+    private static readonly string ClipsIndexFile = Path.Combine(VidcutterWorkingDirectory, "videos.txt");
+    private readonly ClipProcessor _clipProcessor = new(ClipDelays.FromSettings(VidcutterModule.Settings));
+    private string VideoFolder => VidcutterModule.Settings.VideoFolder;
+    
     private List<LevelInAVideo> _rowsToProcess = [];
     private bool _deleteAfterProcess;
+
 
     public void Configure(List<LevelInAVideo> rowsToProcess, bool deleteAfterProcess) {
         _rowsToProcess = rowsToProcess;
@@ -32,10 +38,11 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
                     }
                 }
                 
-                Concatenate();
+                string output = VideoUtils.GetOutputVideoName(VideoFolder, _rowsToProcess[0].Level);
+                FFmpegUtils.ConcatenateClipsFromIndexFilePath(ClipsIndexFile, output);
 
                 if (_deleteAfterProcess) {
-                    LogManager.DeleteLogs(_rowsToProcess);
+                    LogService.DeleteLogs(_rowsToProcess);
                 }
             } finally {
                 Clean();
@@ -46,8 +53,8 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
     }
 
     private int ProcessRow(LevelInAVideo levelInAVideo, StreamWriter clipsIndexWriter, int startIdx = 1) {
-        List<GameplayClip> clips = VideoManager.ProcessLogs(levelInAVideo).FindAll(clip => clip.Duration > 0.2);
-        VideoFile video = VideoFileManager.Get(VideoManager.GetFullFilePath(levelInAVideo.VideoName));
+        List<GameplayClip> clips = _clipProcessor.GetClips(levelInAVideo).FindAll(clip => clip.Duration > 0.2);
+        VideoFile video = VideoFileRepository.Get(levelInAVideo.VideoPath);
         int clipIdx = startIdx;
         foreach (GameplayClip clip in clips) {
             Progress = 0;
@@ -57,7 +64,7 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
             string videoName = $"{clipIdx}.mp4";
                 
             FFmpegUtils.CutClip(
-                video, 
+                video.FilePath, 
                 clip.StartTimeWithDelay - video.CreationTime, 
                 clip.EndTimeWithDelay - video.CreationTime,
                 output: Path.Combine(VidcutterWorkingDirectory, videoName),
@@ -70,11 +77,6 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
             clipIdx++;
         }
         return clipIdx;
-    }
-
-    private void Concatenate() {
-        string output = VideoManager.GetOutputVideoName(_rowsToProcess[0].Level);
-        FFmpegUtils.ConcatenateClipsFromIndexFilePath(ClipsIndexFile, output);
     }
 
     private void Clean() {

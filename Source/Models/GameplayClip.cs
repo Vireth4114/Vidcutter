@@ -11,6 +11,10 @@ public record GameplayClip(LoggedString Start, LoggedString End, float StartDela
 
     public string Level => Start.Level;
 
+    public bool IsInVideo(VideoFile video) {
+        return video.IsDuringVideo(StartTimeWithDelay) || video.IsDuringVideo(EndTimeWithDelay);
+    }
+
     public override string ToString() {
         return $"Start: {Start}, End: {End}";
     }

@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Celeste.Mod.Vidcutter.Models;
-using static Celeste.Mod.Vidcutter.Utils.FileUtils;
+using Celeste.Mod.Vidcutter.Utils.Logs;
+using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
-public class VideoFileManager {
+public static class VideoFileRepository {
+    private static readonly string DurationCacheFile = Path.Combine(VidcutterWorkingDirectory, "durationCache.txt");
     private static readonly Dictionary<string, TimeSpan> DurationCache = new();
     private static readonly Dictionary<string, VideoFile> VideoFileCache = new();
     private static readonly Dictionary<string, bool> CanBeProcessed = new();
@@ -35,12 +38,37 @@ public class VideoFileManager {
         if (VideoFileCache.TryGetValue(filePath, out VideoFile cachedVideoFile))
             return cachedVideoFile;
 
-        return VideoFileCache[filePath] = new VideoFile(
+        VideoFile videoFile = new VideoFile(
             filePath,
             GetCreationTime(filePath),
             GetEndTime(filePath),
             CanBeProcessed.GetValueOrDefault(filePath, true)
         );
+        if (!videoFile.IsStillWriting()) {
+            VideoFileCache[filePath] = videoFile;
+        }
+
+        return videoFile;
+    }
+    
+    public static List<VideoFile> GetAllVideos(string folder) {
+        List<LoggedString> logs = LogService.GetAllLogs();
+        if (!Directory.Exists(folder) || logs.Count == 0) {
+            return [];
+        }
+
+        string[] allFiles = Directory.GetFiles(folder);
+        DateTime firstLog = logs[0].Time;
+        
+        List<VideoFile> videos = allFiles
+            .Select(Path.GetFileName)
+            .Select(v => Path.Combine(folder, Path.GetFileName(v)))
+            .Select(Get)
+            .Where(video => video.EndTime >= firstLog)
+            .ToList();
+        
+        Logger.Info("Vidcutter", $"{videos.Count}/{allFiles.Length} videos in {folder} are after start of log");
+        return videos;
     }
 
     private static DateTime GetCreationTime(string filePath) {

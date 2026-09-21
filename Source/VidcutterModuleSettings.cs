@@ -45,7 +45,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     [SettingName("MODOPTIONS_VIDCUTTER_CRF")]
     [SettingSubText("MODOPTIONS_VIDCUTTER_CRF_SUB")]
     [SettingRange(0, 51)]
-    public int CRF { get; set; } = 27;
+    public int Crf { get; set; } = 27;
 
     [SettingIgnore]
     public string FFmpegPath { get; set; } = "";

@@ -1,5 +1,6 @@
 ﻿using System;
 using Celeste.Mod.Vidcutter.Hooks;
+using Celeste.Mod.Vidcutter.Utils.Logs;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -10,10 +11,17 @@ public class VidcutterModule : EverestModule {
     public static VidcutterModuleSettings Settings => (VidcutterModuleSettings)Instance._Settings;
 
     public static readonly VidcutterState State = new();
+    
+    public static LogReader LogReader;
+    public static LogWriter LogWriter;
 
     public VidcutterModule() {
         Instance = this;
         Logger.SetLogLevel(nameof(VidcutterModule), LogLevel.Info);
+    }
+
+    public override void Initialize() {
+        LogService.SwitchToReader();
     }
 
     public override void Load() {
@@ -22,5 +30,6 @@ public class VidcutterModule : EverestModule {
 
     public override void Unload() {
         HookManager.UnloadAll();
+        LogService.Close();
     }
 }

@@ -1,0 +1,66 @@
+using System.Collections.Generic;
+using System.Linq;
+using Celeste.Mod.Vidcutter.Models;
+using Celeste.Mod.Vidcutter.Utils.Logs;
+
+namespace Celeste.Mod.Vidcutter.Utils;
+
+public class ClipProcessor(ClipDelays delays) {
+    private readonly GameplayClipFactory _clipFactory = new(delays);
+
+    public ClipProcessor() : this(new ClipDelays(0, 0, 0)) { }
+
+    public List<GameplayClip> GetClips(VideoFile video) {
+        return GetClipsFromLogs(LogService.GetAllLogs(video));
+    }
+
+    public List<GameplayClip> GetClips(LevelInAVideo levelInAVideo) {
+        return GetClipsFromLogs(
+            LogService.GetAllLogs(
+                VideoFileRepository.Get(levelInAVideo.VideoPath),
+                levelInAVideo.Level
+            )
+        );
+    }
+
+    public List<GameplayClip> GetClipsFromLogs(List<LoggedString> parsedLines) {
+        List<GameplayClip> processedClips = [];
+        List<LoggedString> logsForCurrentClip = [];
+        for (int i = 0; i < parsedLines.Count; i++) {
+            LoggedString currentLine = parsedLines[i];
+            LoggedString nextLine = i < parsedLines.Count - 1 ? parsedLines[i + 1] : null;
+
+            if (currentLine.Event == "RESTART CHAPTER") {
+                processedClips = processedClips.Where(clip => clip.Level != currentLine.Level).ToList();
+                logsForCurrentClip.Clear();
+                continue;
+            }
+
+            if (nextLine != null && nextLine.Level == currentLine.Level && nextLine.IsCleared() && nextLine.CountTowardsClear != false) {
+                logsForCurrentClip.Add(currentLine);
+                continue;
+            }
+
+            if (logsForCurrentClip.Count == 0)
+                continue;
+            
+            LoggedString clipEnd = currentLine;
+
+            if (clipEnd.BackToStartOfInterRoom()) {
+                clipEnd = LastClearedLogToRoom(logsForCurrentClip, clipEnd.Room);
+                if (clipEnd == null) {
+                    logsForCurrentClip.Clear();
+                    continue;
+                }
+            }
+        
+            processedClips.Add(_clipFactory.Create(logsForCurrentClip[0], clipEnd));
+            logsForCurrentClip.Clear();
+        }
+        return processedClips;
+    }
+
+    private LoggedString LastClearedLogToRoom(List<LoggedString> logs, string room) {
+        return logs.LastOrDefault(log => log.Room == room && log.IsCleared() && !log.BackToStartOfInterRoom());
+    }
+}

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace Celeste.Mod.Vidcutter.Models;
@@ -18,6 +19,27 @@ public record LoggedString(
     private static readonly HashSet<string> CollectableEvents = [
         "BERRY", "CASSETTE", "HEART", "KEY", "SUMMIT_GEM"
     ];
+
+    public static LoggedString GetFromSession(string message, Session session) {
+        string sid = session.Area.SID;
+        if (sid.StartsWith("Celeste/")) {
+            sid = sid.Contains("LostLevels") ? "AREA_10" : $"AREA_{sid[8]}";
+        }
+        
+        string chapter = Dialog.Clean(sid).Replace("|", "-");
+
+        chapter += session.Area.Mode switch {
+            AreaMode.BSide =>
+                $" [{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(Dialog.Clean("OVERWORLD_REMIX").ToLowerInvariant())}]",
+            AreaMode.CSide =>
+                $" [{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(Dialog.Clean("OVERWORLD_REMIX2").ToLowerInvariant())}]",
+            _ => ""
+        };
+
+        string room = session.Level.Replace("|", "-");
+        
+        return new(DateTime.Now, message, chapter, room);
+    }
 
     public static LoggedString Parse(string line) {
         DateTime logTime = DateTime.Parse(line[1..24]);

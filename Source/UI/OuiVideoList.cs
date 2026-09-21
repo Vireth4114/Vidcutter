@@ -7,6 +7,7 @@ using Celeste.Mod.UI;
 using Celeste.Mod.Vidcutter.Entities;
 using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Utils;
+using Celeste.Mod.Vidcutter.Utils.Logs;
 using Microsoft.Xna.Framework;
 using Monocle;
 using static Celeste.TextMenu;
@@ -22,7 +23,10 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     
     private TextMenu _menu;
 
+    private string VideoFolder => VidcutterModule.Settings.VideoFolder;
+
     private void ReloadMenu() {
+        ClipProcessor clipProcessor = new();
         TextMenu oldMenu = _menu;
         if (oldMenu != null) {
             Scene.Remove(oldMenu);
@@ -34,10 +38,10 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         _rows.Clear();
         _selectedRows.Clear();
 
-        foreach (VideoFile video in VideoManager.GetAllVideos()) {
-            HashSet<LevelInAVideo> rowsForVideo = VideoManager.ProcessLogs(video)
+        foreach (VideoFile video in VideoFileRepository.GetAllVideos(VideoFolder)) {
+            HashSet<LevelInAVideo> rowsForVideo = clipProcessor.GetClips(video)
                 .GroupBy(clip => clip.Level)
-                .Select(g => new LevelInAVideo(video.FileName, g.Key) {
+                .Select(g => new LevelInAVideo(video.FilePath, g.Key) {
                     FirstLog = g.First().Start,
                     LastLog = g.Last().End
                 })
@@ -119,7 +123,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
 
     private Button GetDeleteButton() {
         return GetButton(Dialog.Clean("VIDCUTTER_DELETE"), () => {
-            LogManager.DeleteLogs(_selectedRows.Select(button => button.Data).ToList());
+            LogService.DeleteLogs(_selectedRows.Select(button => button.Data).ToList());
             OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
         });
     }
