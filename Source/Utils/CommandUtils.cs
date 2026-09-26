@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 
 namespace Celeste.Mod.Vidcutter.Utils;
@@ -33,13 +34,12 @@ public static class CommandUtils {
     }
 
     public static bool IsFFmpegInPath() {
-        return false;
-        // try {
-        //     Run(FFmpeg("version", ""));
-        //     return true;
-        // } catch (Win32Exception) {
-        //     return false;
-        // }
+        try {
+            Run(FFmpeg("version", ""));
+            return true;
+        } catch (Win32Exception) {
+            return false;
+        }
     }
 
     public static Process GetDurationStringWithFFprobe(string filePath, string ffmpegDirectory) {

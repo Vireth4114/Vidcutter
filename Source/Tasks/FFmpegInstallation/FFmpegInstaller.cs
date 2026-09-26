@@ -39,7 +39,7 @@ public abstract class FFmpegInstaller(IProgress progress) {
         progress.Task = new Task(InstallFFmpegTask);
         progress.OnComplete += () => {
             _isInstalling = false;
-            FFmpegDirectory = Path.Combine(VidcutterWorkingDirectory, "ffmpeg", "bin");
+            FFmpegDirectory = FFmpegBinDirectory;
             onComplete?.Invoke();
         };
         progress.Start();

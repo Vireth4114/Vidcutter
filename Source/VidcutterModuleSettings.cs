@@ -64,7 +64,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
         menu.Add(new TextMenu.Button(Dialog.Clean("MODOPTIONS_VIDCUTTER_CUTVIDEOS")) {
             OnPressed = () => {
                 FFmpegInstaller ffmpegInstaller = FFmpegInstallerFactory.Create(
-                    new OuiVidcutterProgress(Dialog.Clean("VIDCUTTER_INSTALLINGFFMPEG"))
+                    new OuiVidcutterProgress(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"))
                 );
 
                 if (ffmpegInstaller.IsFFmpegInstalled()) {
