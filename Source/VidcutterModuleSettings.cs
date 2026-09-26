@@ -77,7 +77,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     }
 
     private void GotoVideoList(string ffmpegDirectory) {
-        OuiModOptions.Instance.Overworld.Goto<OuiVideoList>().Configure(new FFmpegService(ffmpegDirectory, this));
+        OuiModOptions.Instance.Overworld.Goto<OuiVideoList>().Configure(new FFmpegService(ffmpegDirectory, Crf), this);
     }
 
     [SettingName("MODOPTIONS_VIDCUTTER_CUTFROMLASTSAVESTATE")]

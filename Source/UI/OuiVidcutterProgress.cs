@@ -5,6 +5,8 @@ using Celeste.Mod.Vidcutter.Utils;
 
 namespace Celeste.Mod.Vidcutter.UI;
 
+class OuiLoggedProgressFromVidcutter : OuiLoggedProgress;
+
 public class OuiVidcutterProgress(string title): IProgress {
     private OuiLoggedProgress _loggedProgress;
 
@@ -14,7 +16,7 @@ public class OuiVidcutterProgress(string title): IProgress {
         get;
         set {
             field = value;
-            _loggedProgress?.Lines = [Message];
+            _loggedProgress?.Lines[^1] = Message;
         }
     }
 
@@ -61,5 +63,10 @@ public class OuiVidcutterProgress(string title): IProgress {
             taskToRun.RunSynchronously();
         });
         Start();
+    }
+
+    public void AddLine(string message) {
+        _loggedProgress?.Lines.Add(message);
+        Message = message;
     }
 }

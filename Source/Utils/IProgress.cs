@@ -12,4 +12,5 @@ public interface IProgress {
 
     public void Start();
     public void StartAfterDelay(float delay);
+    public void AddLine(string message);
 }

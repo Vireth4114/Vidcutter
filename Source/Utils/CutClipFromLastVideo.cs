@@ -45,9 +45,7 @@ public class CutClipFromLastVideo {
                 _clip.StartTimeWithDelay - _lastVideoFile.CreationTime,
                 _clip.EndTimeWithDelay - _lastVideoFile.CreationTime,
                 output,
-                onProgress: timeProcessed => {
-                    progress.Progress = (float) (timeProcessed.TotalSeconds / _clip.Duration);
-                }
+                progress
             )
         );
         progress.MessageOnComplete = output + " " + Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSED_VIDEO");

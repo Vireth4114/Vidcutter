@@ -83,4 +83,8 @@ public class TooltipWithProgress : Tooltip, IProgress {
         scene.Add(progress);
         return progress;
     }
+
+    public void AddLine(string message) {
+        Message = message;
+    }
 }

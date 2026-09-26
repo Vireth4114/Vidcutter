@@ -33,7 +33,7 @@ public static class HotkeyHooks {
             GameplayClipFactory clipFactory = new(ClipDelays.FromSettings(Settings));
             GameplayClip clip = clipFactory.Create(State.LastState, State.LastEvent);
                 
-            FFmpegService ffmpegService = new(ffmpegInstaller.FFmpegDirectory, Settings);
+            FFmpegService ffmpegService = new(ffmpegInstaller.FFmpegDirectory, Settings.Crf);
 
             CutClipFromLastVideo cutClipFromLastVideo = new(ffmpegService, Settings.VideoFolder, clip);
                 

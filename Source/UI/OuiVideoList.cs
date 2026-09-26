@@ -20,14 +20,22 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     private float _alpha;
     private readonly ObservableCollection<LevelRow> _selectedRows = [];
     private readonly List<LevelRow> _rows = [];
+    
     private FFmpegService _ffmpegService;
+    private VidcutterModuleSettings _settings;
+    private ProcessVideos _processVideos;
     
     private TextMenu _menu;
 
-    private string VideoFolder => VidcutterModule.Settings.VideoFolder;
-
-    public void Configure(FFmpegService ffmpegService) {
+    public void Configure(FFmpegService ffmpegService, VidcutterModuleSettings settings) {
         _ffmpegService = ffmpegService;
+        _settings = settings;
+        _processVideos = new ProcessVideos(
+            new OuiVidcutterProgress(Dialog.Clean("VIDCUTTER_PROCESS_TITLE")),
+            _ffmpegService,
+            ClipDelays.FromSettings(_settings),
+            _settings.VideoFolder
+        );
     }
 
     private void ReloadMenu() {
@@ -44,7 +52,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         _rows.Clear();
         _selectedRows.Clear();
 
-        foreach (VideoFile video in videoFileRepository.GetAllVideos(VideoFolder)) {
+        foreach (VideoFile video in videoFileRepository.GetAllVideos(_settings.VideoFolder)) {
             HashSet<LevelInAVideo> rowsForVideo = clipProcessor.GetClips(video)
                 .GroupBy(clip => clip.Level)
                 .Select(g => new LevelInAVideo(video.FilePath, g.Key) {
@@ -96,6 +104,10 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         }
     }
 
+    private List<LevelInAVideo> GetRowsToProcess() {
+        return _selectedRows.Select(button => button.Data).ToList();
+    }
+
     private Button GetButton(string label, Action onPressed) {
         Button button = new(label) {
             OnPressed = onPressed,
@@ -107,31 +119,31 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         };
         return button;
     }
-    
 
     private Button GetProcessButton() {
         return GetButton(Dialog.Clean("VIDCUTTER_PROCESS"), () => {
-            OuiModOptions.Instance.Overworld.Goto<OuiProcessVideosProgress>().Configure(
-                rowsToProcess: _selectedRows.Select(button => button.Data).ToList(),
-                deleteAfterProcess: false,
-                ffmpegService: _ffmpegService
+            _processVideos.Execute(
+                rows: GetRowsToProcess(),
+                onComplete: () => Overworld.Goto<OuiModOptions>()
             );
         });
     }
 
     private Button GetProcessAndDeleteButton() {
         return GetButton(Dialog.Clean("VIDCUTTER_PROCESS_AND_DELETE"), () => {
-            OuiModOptions.Instance.Overworld.Goto<OuiProcessVideosProgress>().Configure(
-                rowsToProcess: _selectedRows.Select(button => button.Data).ToList(),
-                deleteAfterProcess: true,
-                ffmpegService: _ffmpegService
+            _processVideos.Execute(
+                rows: GetRowsToProcess(),
+                onComplete: () => {
+                    LogService.DeleteLogs(GetRowsToProcess());
+                    Overworld.Goto<OuiModOptions>();
+                }
             );
         });
     }
 
     private Button GetDeleteButton() {
         return GetButton(Dialog.Clean("VIDCUTTER_DELETE"), () => {
-            LogService.DeleteLogs(_selectedRows.Select(button => button.Data).ToList());
+            LogService.DeleteLogs(GetRowsToProcess());
             OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
         });
     }
