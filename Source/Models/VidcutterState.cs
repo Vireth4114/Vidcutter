@@ -1,4 +1,3 @@
-using Celeste.Mod.Vidcutter.Models;
 using Microsoft.Xna.Framework;
 
 namespace Celeste.Mod.Vidcutter.Models;

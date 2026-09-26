@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
 using Microsoft.Xna.Framework;
 using Monocle;

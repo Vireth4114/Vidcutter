@@ -1,7 +1,5 @@
-using Celeste.Mod.Vidcutter.Entities;
 using Celeste.Mod.Vidcutter.Exceptions;
 using Celeste.Mod.Vidcutter.Models;
-using Celeste.Mod.Vidcutter.Progress;
 using Celeste.Mod.Vidcutter.Progress.Tooltips;
 using Celeste.Mod.Vidcutter.Services;
 using Celeste.Mod.Vidcutter.Services.GameplayClips;

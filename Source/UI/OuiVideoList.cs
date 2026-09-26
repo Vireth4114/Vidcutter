@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Celeste.Mod.UI;
-using Celeste.Mod.Vidcutter.Entities;
 using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Progress;
 using Celeste.Mod.Vidcutter.Services;

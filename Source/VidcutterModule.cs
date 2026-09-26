@@ -1,5 +1,6 @@
 ﻿using System;
 using Celeste.Mod.Vidcutter.Hooks;
+using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
 
 namespace Celeste.Mod.Vidcutter;
