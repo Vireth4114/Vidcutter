@@ -7,7 +7,7 @@ namespace Celeste.Mod.Vidcutter.Entities;
 public class SimpleTooltip : Tooltip {
     private readonly float _duration;
     
-    private SimpleTooltip(string message, float duration) : base() {
+    private SimpleTooltip(string message, float duration) {
         Logger.Info("Vidcutter", "Showing tooltip: " + message);
         _duration = duration;
         Message = message;

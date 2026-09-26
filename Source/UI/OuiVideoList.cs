@@ -20,12 +20,18 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     private float _alpha;
     private readonly ObservableCollection<LevelRow> _selectedRows = [];
     private readonly List<LevelRow> _rows = [];
+    private FFmpegService _ffmpegService;
     
     private TextMenu _menu;
 
     private string VideoFolder => VidcutterModule.Settings.VideoFolder;
 
+    public void Configure(FFmpegService ffmpegService) {
+        _ffmpegService = ffmpegService;
+    }
+
     private void ReloadMenu() {
+        VideoFileRepository videoFileRepository = new(_ffmpegService);
         ClipProcessor clipProcessor = new();
         TextMenu oldMenu = _menu;
         if (oldMenu != null) {
@@ -38,7 +44,7 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         _rows.Clear();
         _selectedRows.Clear();
 
-        foreach (VideoFile video in VideoFileRepository.GetAllVideos(VideoFolder)) {
+        foreach (VideoFile video in videoFileRepository.GetAllVideos(VideoFolder)) {
             HashSet<LevelInAVideo> rowsForVideo = clipProcessor.GetClips(video)
                 .GroupBy(clip => clip.Level)
                 .Select(g => new LevelInAVideo(video.FilePath, g.Key) {
@@ -107,7 +113,8 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         return GetButton(Dialog.Clean("VIDCUTTER_PROCESS"), () => {
             OuiModOptions.Instance.Overworld.Goto<OuiProcessVideosProgress>().Configure(
                 rowsToProcess: _selectedRows.Select(button => button.Data).ToList(),
-                deleteAfterProcess: false
+                deleteAfterProcess: false,
+                ffmpegService: _ffmpegService
             );
         });
     }
@@ -116,7 +123,8 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         return GetButton(Dialog.Clean("VIDCUTTER_PROCESS_AND_DELETE"), () => {
             OuiModOptions.Instance.Overworld.Goto<OuiProcessVideosProgress>().Configure(
                 rowsToProcess: _selectedRows.Select(button => button.Data).ToList(),
-                deleteAfterProcess: true
+                deleteAfterProcess: true,
+                ffmpegService: _ffmpegService
             );
         });
     }
@@ -129,9 +137,6 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     }
 
     public override IEnumerator Enter(Oui from) {
-        if (FFmpegUtils.Initialize(() => OuiModOptions.Instance.Overworld.Goto<OuiFFmpegInstallProgress>())) {
-            yield break;
-        }
         Visible = true;
 
         ReloadMenu();

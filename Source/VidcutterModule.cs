@@ -11,9 +11,6 @@ public class VidcutterModule : EverestModule {
     public static VidcutterModuleSettings Settings => (VidcutterModuleSettings)Instance._Settings;
 
     public static readonly VidcutterState State = new();
-    
-    public static LogReader LogReader;
-    public static LogWriter LogWriter;
 
     public VidcutterModule() {
         Instance = this;

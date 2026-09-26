@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using Celeste.Mod.UI;
 using Celeste.Mod.Vidcutter.UI;
+using Celeste.Mod.Vidcutter.Utils;
+using Celeste.Mod.Vidcutter.Utils.Installers;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -59,9 +61,23 @@ public class VidcutterModuleSettings : EverestModuleSettings {
         }
         menu.Add(new TextMenu.Button(Dialog.Clean("MODOPTIONS_VIDCUTTER_CUTVIDEOS")) {
             OnPressed = () => {
-                OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
+                FFmpegInstaller ffmpegInstaller = FFmpegInstallerFactory.Create(
+                    new OuiVidcutterProgress(Dialog.Clean("VIDCUTTER_INSTALLINGFFMPEG"))
+                );
+
+                if (ffmpegInstaller.IsFFmpegInstalled()) {
+                    GotoVideoList(ffmpegInstaller.FFmpegDirectory);
+                } else {
+                    ffmpegInstaller.InstallFFmpegAsynchronously(onComplete: () => {
+                        GotoVideoList(ffmpegInstaller.FFmpegDirectory);
+                    });
+                }
             }
         });
+    }
+
+    private void GotoVideoList(string ffmpegDirectory) {
+        OuiModOptions.Instance.Overworld.Goto<OuiVideoList>().Configure(new FFmpegService(ffmpegDirectory, this));
     }
 
     [SettingName("MODOPTIONS_VIDCUTTER_CUTFROMLASTSAVESTATE")]

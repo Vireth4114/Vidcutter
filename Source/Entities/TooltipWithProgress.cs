@@ -15,6 +15,7 @@ public class TooltipWithProgress : Tooltip, IProgress {
 
     public Task Task { get; set; }
     public float Progress { get; set; }
+    public string MessageOnComplete { get; set; }
     public event Action OnComplete;
 
     public void Start() {
@@ -23,7 +24,12 @@ public class TooltipWithProgress : Tooltip, IProgress {
             if (t.IsFaulted) {
                 SimpleTooltip.Show(t.Exception.InnerExceptions.First().Message, 5f);
             } else if (t.IsCompletedSuccessfully) {
-                OnComplete?.Invoke();
+                Progress = 1;
+                if (OnComplete != null) {
+                    OnComplete();
+                } else if (MessageOnComplete != null) {
+                    SimpleTooltip.Show(MessageOnComplete, 5f);
+                }
             }
         });
     }
@@ -44,11 +50,10 @@ public class TooltipWithProgress : Tooltip, IProgress {
     }
 
     protected override IEnumerator Dismiss() {
-        while (Task.Status != TaskStatus.RanToCompletion && Task.Status != TaskStatus.Faulted) {
+        while (Task != null && Task.Status != TaskStatus.RanToCompletion && Task.Status != TaskStatus.Faulted) {
             yield return null;
         }
-
-        RemoveSelf();
+        yield return base.Dismiss();
     }
 
     public override void Render() {

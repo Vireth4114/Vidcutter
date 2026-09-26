@@ -18,14 +18,17 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
     
     private List<LevelInAVideo> _rowsToProcess = [];
     private bool _deleteAfterProcess;
+    private FFmpegService _ffmpegService;
+    private VideoFileRepository _videoFileRepository;
 
-
-    public void Configure(List<LevelInAVideo> rowsToProcess, bool deleteAfterProcess) {
+    public void Configure(List<LevelInAVideo> rowsToProcess, bool deleteAfterProcess, FFmpegService ffmpegService) {
         _rowsToProcess = rowsToProcess;
         _deleteAfterProcess = deleteAfterProcess;
+        _ffmpegService = ffmpegService;
     }
     
     public override IEnumerator Enter(Oui from) {
+        _videoFileRepository = new VideoFileRepository(_ffmpegService);
         Init<OuiModOptions>(Dialog.Clean("VIDCUTTER_PROCESS_TITLE"), new Task(() => {
             try {
                 int clipIdx = 1;
@@ -39,7 +42,7 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
                 }
                 
                 string output = VideoUtils.GetOutputVideoName(VideoFolder, _rowsToProcess[0].Level);
-                FFmpegUtils.ConcatenateClipsFromIndexFilePath(ClipsIndexFile, output);
+                _ffmpegService.ConcatenateClipsFromIndexFilePath(ClipsIndexFile, output);
 
                 if (_deleteAfterProcess) {
                     LogService.DeleteLogs(_rowsToProcess);
@@ -53,8 +56,12 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
     }
 
     private int ProcessRow(LevelInAVideo levelInAVideo, StreamWriter clipsIndexWriter, int startIdx = 1) {
-        List<GameplayClip> clips = _clipProcessor.GetClips(levelInAVideo).FindAll(clip => clip.Duration > 0.2);
-        VideoFile video = VideoFileRepository.Get(levelInAVideo.VideoPath);
+        List<LoggedString> logsForRow = LogService.GetAllLogs(
+            _videoFileRepository.Get(levelInAVideo.VideoPath),
+            levelInAVideo.Level
+        );
+        List<GameplayClip> clips = _clipProcessor.GetClipsFromLogs(logsForRow).FindAll(clip => clip.Duration > 0.2);
+        VideoFile video = _videoFileRepository.Get(levelInAVideo.VideoPath);
         int clipIdx = startIdx;
         foreach (GameplayClip clip in clips) {
             Progress = 0;
@@ -63,7 +70,7 @@ public class OuiProcessVideosProgress : OuiLoggedProgress {
 
             string videoName = $"{clipIdx}.mp4";
                 
-            FFmpegUtils.CutClip(
+            _ffmpegService.CutClip(
                 video.FilePath, 
                 clip.StartTimeWithDelay - video.CreationTime, 
                 clip.EndTimeWithDelay - video.CreationTime,

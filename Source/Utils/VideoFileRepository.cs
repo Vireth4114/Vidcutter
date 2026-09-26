@@ -8,7 +8,7 @@ using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
 namespace Celeste.Mod.Vidcutter.Utils;
 
-public static class VideoFileRepository {
+public class VideoFileRepository(FFmpegService fFmpegService) {
     private static readonly string DurationCacheFile = Path.Combine(VidcutterWorkingDirectory, "durationCache.txt");
     private static readonly Dictionary<string, TimeSpan> DurationCache = new();
     private static readonly Dictionary<string, VideoFile> VideoFileCache = new();
@@ -31,14 +31,14 @@ public static class VideoFileRepository {
         _isDurationCacheLoaded = true;
     }
 
-    public static VideoFile Get(string filePath) {
+    public VideoFile Get(string filePath) {
         if (!_isDurationCacheLoaded)
             LoadDurationCache();
         
         if (VideoFileCache.TryGetValue(filePath, out VideoFile cachedVideoFile))
             return cachedVideoFile;
 
-        VideoFile videoFile = new VideoFile(
+        VideoFile videoFile = new(
             filePath,
             GetCreationTime(filePath),
             GetEndTime(filePath),
@@ -51,7 +51,7 @@ public static class VideoFileRepository {
         return videoFile;
     }
     
-    public static List<VideoFile> GetAllVideos(string folder) {
+    public List<VideoFile> GetAllVideos(string folder) {
         List<LoggedString> logs = LogService.GetAllLogs();
         if (!Directory.Exists(folder) || logs.Count == 0) {
             return [];
@@ -71,7 +71,7 @@ public static class VideoFileRepository {
         return videos;
     }
 
-    private static DateTime GetCreationTime(string filePath) {
+    private DateTime GetCreationTime(string filePath) {
         if (OperatingSystem.IsWindows())
             return File.GetCreationTime(filePath);
         
@@ -86,21 +86,21 @@ public static class VideoFileRepository {
         );
     }
 
-    private static DateTime GetEndTime(string filePath) {
+    private DateTime GetEndTime(string filePath) {
         if (OperatingSystem.IsWindows() && TryGetVideoDurationFromMetadata(filePath, out TimeSpan duration))
             return File.GetCreationTime(filePath) + duration;
         
         return File.GetLastWriteTime(filePath);
     }
     
-    private static bool TryGetVideoDurationFromMetadata(string filePath, out TimeSpan duration) {
+    private bool TryGetVideoDurationFromMetadata(string filePath, out TimeSpan duration) {
         if (DurationCache.TryGetValue(filePath, out duration)) {
             return true;
         }
         
         string strDuration;
         try {
-            strDuration = FFmpegUtils.GetDurationString(filePath);
+            strDuration = fFmpegService.GetDurationFromFFprobe(filePath);
         } catch (InvalidOperationException) {
             // If ffprobe throw an exception on the video, ffmpeg can't process it either
             CanBeProcessed[filePath] = false;
@@ -119,7 +119,7 @@ public static class VideoFileRepository {
     }
 
 
-    private static void WriteCacheInFile(string video, TimeSpan duration) {
+    private void WriteCacheInFile(string video, TimeSpan duration) {
         if (!DurationCache.TryAdd(video, duration))
             return;
         

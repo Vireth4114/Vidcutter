@@ -14,15 +14,6 @@ public class ClipProcessor(ClipDelays delays) {
         return GetClipsFromLogs(LogService.GetAllLogs(video));
     }
 
-    public List<GameplayClip> GetClips(LevelInAVideo levelInAVideo) {
-        return GetClipsFromLogs(
-            LogService.GetAllLogs(
-                VideoFileRepository.Get(levelInAVideo.VideoPath),
-                levelInAVideo.Level
-            )
-        );
-    }
-
     public List<GameplayClip> GetClipsFromLogs(List<LoggedString> parsedLines) {
         List<GameplayClip> processedClips = [];
         List<LoggedString> logsForCurrentClip = [];

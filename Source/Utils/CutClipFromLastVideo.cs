@@ -1,6 +1,5 @@
 using System.IO;
 using System.Threading.Tasks;
-using Celeste.Mod.Vidcutter.Entities;
 using Celeste.Mod.Vidcutter.Exceptions;
 using Celeste.Mod.Vidcutter.Models;
 
@@ -10,8 +9,10 @@ public class CutClipFromLastVideo {
     private readonly string _videoFolder;
     private readonly VideoFile _lastVideoFile;
     private readonly GameplayClip _clip;
+    private readonly FFmpegService _ffmpegService;
     
-    public CutClipFromLastVideo(string videoFolder, GameplayClip clip) {
+    public CutClipFromLastVideo(FFmpegService ffmpegService, string videoFolder, GameplayClip clip) {
+        _ffmpegService = ffmpegService;
         if (!Directory.Exists(videoFolder))
             throw new VideoProcessingException("VIDCUTTER_TOOLTIP_VIDEO_FOLDER_NOT_FOUND");
 
@@ -20,7 +21,8 @@ public class CutClipFromLastVideo {
             throw new VideoProcessingException("VIDCUTTER_TOOLTIP_VIDEO_NOT_FOUND");
         
         _videoFolder = videoFolder;
-        _lastVideoFile = VideoFileRepository.Get(Path.Combine(videoFolder, lastVideo));
+        VideoFileRepository videoFileRepository = new(ffmpegService);
+        _lastVideoFile = videoFileRepository.Get(Path.Combine(videoFolder, lastVideo));
         _clip = clip;
         Validate();
     }
@@ -38,7 +40,7 @@ public class CutClipFromLastVideo {
         
         progress.Message = Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSING_VIDEO");
         progress.Task = new Task(() =>
-            FFmpegUtils.CutClip(
+            _ffmpegService.CutClip(
                 _lastVideoFile.FilePath,
                 _clip.StartTimeWithDelay - _lastVideoFile.CreationTime,
                 _clip.EndTimeWithDelay - _lastVideoFile.CreationTime,
@@ -48,10 +50,7 @@ public class CutClipFromLastVideo {
                 }
             )
         );
-        progress.OnComplete += () => {
-            progress.Progress = 1f;
-            SimpleTooltip.Show(output + " " + Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSED_VIDEO"), 3f);
-        };
+        progress.MessageOnComplete = output + " " + Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSED_VIDEO");
         
         progress.StartAfterDelay(_lastVideoFile.IsStillWriting() ? 5f : 0f);
     }
