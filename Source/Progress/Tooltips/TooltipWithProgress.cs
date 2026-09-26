@@ -14,7 +14,6 @@ public class TooltipWithProgress : Tooltip, IProgress {
 
     public Task Task { get; set; }
     public float Progress { get; set; }
-    public string MessageOnComplete { get; set; }
     public event Action OnComplete;
 
     public void Start() {
@@ -26,8 +25,6 @@ public class TooltipWithProgress : Tooltip, IProgress {
                 Progress = 1;
                 if (OnComplete != null) {
                     OnComplete();
-                } else if (MessageOnComplete != null) {
-                    SimpleTooltip.Show(MessageOnComplete, 5f);
                 }
             }
         });

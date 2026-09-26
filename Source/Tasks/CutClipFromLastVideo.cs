@@ -38,20 +38,21 @@ public class CutClipFromLastVideo {
             throw new VideoProcessingException("VIDCUTTER_TOOLTIP_STATE_NOT_FOUND");
     }
 
+    public string GetOutputFileName() {
+        return VideoUtils.GetOutputVideoName(_videoFolder, _clip.Level);
+    }
+
     public void Execute(IProgress progress) {
-        string output = VideoUtils.GetOutputVideoName(_videoFolder, _clip.Level);
-        
         progress.Message = Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSING_VIDEO");
         progress.Task = new Task(() =>
             _ffmpegService.CutClip(
                 _lastVideoFile.FilePath,
                 _clip.StartTimeWithDelay - _lastVideoFile.CreationTime,
                 _clip.EndTimeWithDelay - _lastVideoFile.CreationTime,
-                output,
+                GetOutputFileName(),
                 newProgress => progress.Progress = newProgress
             )
         );
-        progress.MessageOnComplete = output + " " + Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSED_VIDEO");
         
         progress.StartAfterDelay(_lastVideoFile.IsStillWriting() ? 5f : 0f);
     }

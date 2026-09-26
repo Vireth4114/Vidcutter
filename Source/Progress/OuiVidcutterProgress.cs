@@ -28,8 +28,6 @@ public class OuiVidcutterProgress(string title): IProgress {
             _loggedProgress?.Progress = (int) (Progress * 100);
         }
     }
-
-    public string MessageOnComplete { get; set; }
     public event Action OnComplete;
 
     public void Start() {
@@ -40,16 +38,7 @@ public class OuiVidcutterProgress(string title): IProgress {
         _loggedProgress.ProgressMax = 100;
         _loggedProgress.OnFinish += OnComplete;
         _loggedProgress.Lines = [Message];
-        if (MessageOnComplete != null) {
-            _loggedProgress.WaitForConfirmOnFinish = true;
-        }
         Task.Start();
-        Task.ContinueWith(t => {
-            if (t.IsCompletedSuccessfully && MessageOnComplete != null) {
-                _loggedProgress.Lines.Add(MessageOnComplete);
-                _loggedProgress.Lines.Add(Dialog.Clean("AUTOUPDATECHECKER_CONTINUE"));
-            }
-        });
     }
 
     public void StartAfterDelay(float delay) {

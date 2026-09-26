@@ -7,7 +7,6 @@ public interface IProgress {
     public string Message { set; }
     public Task Task { set; }
     public float Progress { set; }
-    public string MessageOnComplete { set; }
     public event Action OnComplete; 
 
     public void Start();

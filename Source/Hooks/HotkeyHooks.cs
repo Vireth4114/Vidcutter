@@ -38,7 +38,10 @@ public static class HotkeyHooks {
             FFmpegService ffmpegService = new(ffmpegInstaller.FFmpegDirectory, Settings.Crf);
 
             CutClipFromLastVideo cutClipFromLastVideo = new(ffmpegService, Settings.VideoFolder, clip);
-                
+            
+            TooltipWithProgress progress = TooltipWithProgress.Get();
+            progress.OnComplete += () => SimpleTooltip.Show($"{cutClipFromLastVideo.GetOutputFileName()} {Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSED_VIDEO")}");
+            
             cutClipFromLastVideo.Execute(TooltipWithProgress.Get());
         } catch (VideoProcessingException exception) {
             SimpleTooltip.Show(Dialog.Clean(exception.DialogId));
