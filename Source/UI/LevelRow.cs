@@ -5,7 +5,7 @@ using Monocle;
 using static Celeste.TextMenu;
 using static Celeste.TextMenuExt;
 
-namespace Celeste.Mod.Vidcutter.Entities;
+namespace Celeste.Mod.Vidcutter.UI;
 
 public class LevelRow : Button {
     public int Index { get; set; }

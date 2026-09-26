@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Celeste.Mod.Vidcutter.Models;
+using Celeste.Mod.Vidcutter.Services.GameplayClips;
 using Celeste.Mod.Vidcutter.Utils;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

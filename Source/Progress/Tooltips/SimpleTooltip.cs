@@ -2,7 +2,7 @@ using System.Collections;
 using System.Linq;
 using Monocle;
 
-namespace Celeste.Mod.Vidcutter.Entities;
+namespace Celeste.Mod.Vidcutter.Progress.Tooltips;
 
 public class SimpleTooltip : Tooltip {
     private readonly float _duration;

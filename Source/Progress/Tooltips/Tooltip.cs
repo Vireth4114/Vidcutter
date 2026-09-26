@@ -2,7 +2,7 @@ using System.Collections;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Celeste.Mod.Vidcutter.Entities;
+namespace Celeste.Mod.Vidcutter.Progress.Tooltips;
 
 public abstract class Tooltip : Entity {
     private const int Padding = 25;

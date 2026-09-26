@@ -1,28 +1,31 @@
 ﻿using System;
 using System.Diagnostics;
+using Celeste.Mod.Vidcutter.Utils;
 
-namespace Celeste.Mod.Vidcutter.Utils;
+namespace Celeste.Mod.Vidcutter.Services;
 
 public class FFmpegService(string ffmpegDirectory, int crf) {
     public void ConcatenateClipsFromIndexFilePath(string indexFilePath, string output) {
         CommandUtils.ConcatenateClipFromFile(indexFilePath, output, ffmpegDirectory);
     }
     
-    public void CutClip(string videoPath, TimeSpan startClip, TimeSpan endClip, string output, IProgress progress) {
+    public void CutClip(string videoPath, TimeSpan startClip, TimeSpan endClip, string output, Action<float> updateProgress = null) {
         string ss = $@"{startClip:hh\:mm\:ss\.fff}";
         string to = $@"{endClip:hh\:mm\:ss\.fff}";
 
         Process process = CommandUtils.GetCutClipProcess(ss, to, videoPath, output, ffmpegDirectory, crf);
-        
-        process.OutputDataReceived += (_, e) => {
-            if (e.Data?.StartsWith("out_time=") ?? false) {
-                string stringContainingTimeProcessed = e.Data.Split('=')[1];
-                if (TimeSpan.TryParse(stringContainingTimeProcessed, out TimeSpan timeProcessed)) {
-                    progress.Progress = (float) (timeProcessed.TotalSeconds / (endClip - startClip).TotalSeconds);
+
+        if (updateProgress != null) {
+            process.OutputDataReceived += (_, e) => {
+                if (e.Data?.StartsWith("out_time=") ?? false) {
+                    string stringContainingTimeProcessed = e.Data.Split('=')[1];
+                    if (TimeSpan.TryParse(stringContainingTimeProcessed, out TimeSpan timeProcessed)) {
+                        updateProgress((float) (timeProcessed.TotalSeconds / (endClip - startClip).TotalSeconds));
+                    }
                 }
-            }
-        };
-        
+            };
+        }
+
         process.EnableRaisingEvents = true;
         process.Start();
         process.BeginOutputReadLine();

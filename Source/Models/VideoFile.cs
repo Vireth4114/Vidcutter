@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Celeste.Mod.Vidcutter.Models;
 
-public class VideoFile {
+public record VideoFile {
     public string FilePath { get; }
     public string FileName { get; }
     public bool CanBeProcessed { get; }
@@ -11,7 +11,7 @@ public class VideoFile {
     public DateTime CreationTime { get; }
     public DateTime EndTime { get; }
 
-    public VideoFile(string filePath, DateTime creationTime, DateTime endTime, bool canBeProcessed = true) {
+    public VideoFile(string filePath, DateTime creationTime, DateTime endTime, bool canBeProcessed) {
         if (!File.Exists(filePath)) {
             throw new InvalidOperationException($"The file path {filePath} leads to a non-existing file. Please report this issue.");
         }

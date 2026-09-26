@@ -1,9 +1,11 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Celeste.Mod.Vidcutter.Progress;
+using Celeste.Mod.Vidcutter.Utils;
 using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
-namespace Celeste.Mod.Vidcutter.Utils.Installers;
+namespace Celeste.Mod.Vidcutter.Tasks.FFmpegInstallation;
 
 public abstract class FFmpegInstaller(IProgress progress) {
     private const string BaseDownloadUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download";

@@ -1,7 +1,7 @@
 using Celeste.Mod.Vidcutter.Models;
 using Microsoft.Xna.Framework;
 
-namespace Celeste.Mod.Vidcutter;
+namespace Celeste.Mod.Vidcutter.Models;
 
 public class VidcutterState {
     public Vector2? PreviousRespawnPoint = null;

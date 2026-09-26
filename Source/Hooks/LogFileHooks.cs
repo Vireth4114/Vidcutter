@@ -1,4 +1,4 @@
-using Celeste.Mod.Vidcutter.Utils.Logs;
+using Celeste.Mod.Vidcutter.Services.Logs;
 
 namespace Celeste.Mod.Vidcutter.Hooks;
 

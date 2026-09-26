@@ -4,10 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Celeste.Mod.Vidcutter.Models;
-using Celeste.Mod.Vidcutter.Utils.Logs;
+using Celeste.Mod.Vidcutter.Progress;
+using Celeste.Mod.Vidcutter.Services;
+using Celeste.Mod.Vidcutter.Services.GameplayClips;
+using Celeste.Mod.Vidcutter.Services.Logs;
+using Celeste.Mod.Vidcutter.Utils;
 using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
-namespace Celeste.Mod.Vidcutter.Utils;
+namespace Celeste.Mod.Vidcutter.Tasks;
 
 public class ProcessVideos(IProgress progress, FFmpegService ffmpegService, ClipDelays delays, string outputFolder) {
     private static readonly string ClipsIndexFile = Path.Combine(VidcutterWorkingDirectory, "videos.txt");
@@ -60,7 +64,7 @@ public class ProcessVideos(IProgress progress, FFmpegService ffmpegService, Clip
                 clip.StartTimeWithDelay - video.CreationTime, 
                 clip.EndTimeWithDelay - video.CreationTime,
                 output: Path.Combine(VidcutterWorkingDirectory, videoName),
-                progress: progress
+                newProgress => progress.Progress = newProgress
             );
             
             clipsIndexWriter.WriteLine($"file '{videoName}'");

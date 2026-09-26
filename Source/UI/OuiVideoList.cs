@@ -6,8 +6,11 @@ using System.Linq;
 using Celeste.Mod.UI;
 using Celeste.Mod.Vidcutter.Entities;
 using Celeste.Mod.Vidcutter.Models;
-using Celeste.Mod.Vidcutter.Utils;
-using Celeste.Mod.Vidcutter.Utils.Logs;
+using Celeste.Mod.Vidcutter.Progress;
+using Celeste.Mod.Vidcutter.Services;
+using Celeste.Mod.Vidcutter.Services.GameplayClips;
+using Celeste.Mod.Vidcutter.Services.Logs;
+using Celeste.Mod.Vidcutter.Tasks;
 using Microsoft.Xna.Framework;
 using Monocle;
 using static Celeste.TextMenu;
@@ -22,19 +25,19 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     private readonly List<LevelRow> _rows = [];
     
     private FFmpegService _ffmpegService;
-    private VidcutterModuleSettings _settings;
+    private string _videoFolder;
     private ProcessVideos _processVideos;
     
     private TextMenu _menu;
 
-    public void Configure(FFmpegService ffmpegService, VidcutterModuleSettings settings) {
+    public void Configure(FFmpegService ffmpegService, string videoFolder, ClipDelays clipDelays) {
         _ffmpegService = ffmpegService;
-        _settings = settings;
+        _videoFolder = videoFolder;
         _processVideos = new ProcessVideos(
             new OuiVidcutterProgress(Dialog.Clean("VIDCUTTER_PROCESS_TITLE")),
             _ffmpegService,
-            ClipDelays.FromSettings(_settings),
-            _settings.VideoFolder
+            clipDelays,
+            videoFolder
         );
     }
 
@@ -52,8 +55,8 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
         _rows.Clear();
         _selectedRows.Clear();
 
-        foreach (VideoFile video in videoFileRepository.GetAllVideos(_settings.VideoFolder)) {
-            HashSet<LevelInAVideo> rowsForVideo = clipProcessor.GetClips(video)
+        foreach (VideoFile video in videoFileRepository.GetAllVideos(_videoFolder)) {
+            HashSet<LevelInAVideo> rowsForVideo = clipProcessor.GetClipsFromLogs(LogService.GetAllLogs(video))
                 .GroupBy(clip => clip.Level)
                 .Select(g => new LevelInAVideo(video.FilePath, g.Key) {
                     FirstLog = g.First().Start,

@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Celeste.Mod.Vidcutter.Models;
 
-namespace Celeste.Mod.Vidcutter.Utils.Logs;
+namespace Celeste.Mod.Vidcutter.Services.Logs;
 
 public static class LogService {
-    private static VidcutterState State => VidcutterModule.State;
-    
     private static LogReader _reader;
     private static LogWriter _writer;
 
@@ -54,17 +52,17 @@ public static class LogService {
         writer.WriteLogs(allLogs);
     }
 
-    public static void Log(string message, Session session) {
+    public static void Log(string message, Session session, VidcutterState state) {
         if (_writer == null) throw new Exception("Writer not initialized");
         LoggedString log = LoggedString.GetFromSession(message, session);
         
-        if (!State.IsFromASavestate && log.IsCleared()) {
-            if (State.LastEvent != null && !State.LastEvent.IsCleared()) {
-                _writer.WriteLog(State.LastEvent);
+        if (!state.IsFromASavestate && log.IsCleared()) {
+            if (state.LastEvent != null && !state.LastEvent.IsCleared()) {
+                _writer.WriteLog(state.LastEvent);
             } 
             _writer.WriteLog(log);
         }
 
-        State.LastEvent = log;
+        state.LastEvent = log;
     }
 }

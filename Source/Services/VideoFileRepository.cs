@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Celeste.Mod.Vidcutter.Models;
-using Celeste.Mod.Vidcutter.Utils.Logs;
+using Celeste.Mod.Vidcutter.Services.Logs;
 using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
-namespace Celeste.Mod.Vidcutter.Utils;
+namespace Celeste.Mod.Vidcutter.Services;
 
 public class VideoFileRepository(FFmpegService fFmpegService) {
     private static readonly string DurationCacheFile = Path.Combine(VidcutterWorkingDirectory, "durationCache.txt");

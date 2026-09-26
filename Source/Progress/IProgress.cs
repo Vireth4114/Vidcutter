@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Celeste.Mod.Vidcutter.Utils;
+namespace Celeste.Mod.Vidcutter.Progress;
 
 public interface IProgress {
     public string Message { set; }

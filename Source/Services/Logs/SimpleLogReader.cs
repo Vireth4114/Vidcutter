@@ -4,7 +4,7 @@ using System.Linq;
 using Celeste.Mod.Vidcutter.Models;
 using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
-namespace Celeste.Mod.Vidcutter.Utils.Logs;
+namespace Celeste.Mod.Vidcutter.Services.Logs;
 
 public class SimpleLogReader: LogReader {
     public override List<LoggedString> GetAllLogs() {

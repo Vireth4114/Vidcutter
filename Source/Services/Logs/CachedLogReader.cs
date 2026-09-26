@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Celeste.Mod.Vidcutter.Models;
 
-namespace Celeste.Mod.Vidcutter.Utils.Logs;
+namespace Celeste.Mod.Vidcutter.Services.Logs;
 
 public class CachedLogReader: LogReader {
     private readonly SimpleLogReader _reader = new();

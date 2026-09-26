@@ -2,11 +2,10 @@ using System;
 using System.Collections;
 using System.Linq;
 using System.Threading.Tasks;
-using Celeste.Mod.Vidcutter.Utils;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Celeste.Mod.Vidcutter.Entities;
+namespace Celeste.Mod.Vidcutter.Progress.Tooltips;
 
 public class TooltipWithProgress : Tooltip, IProgress {
     private float _startLine;

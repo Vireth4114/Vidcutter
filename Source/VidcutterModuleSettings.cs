@@ -1,9 +1,11 @@
 using System;
 using System.IO;
 using Celeste.Mod.UI;
+using Celeste.Mod.Vidcutter.Models;
+using Celeste.Mod.Vidcutter.Progress;
+using Celeste.Mod.Vidcutter.Services;
+using Celeste.Mod.Vidcutter.Tasks.FFmpegInstallation;
 using Celeste.Mod.Vidcutter.UI;
-using Celeste.Mod.Vidcutter.Utils;
-using Celeste.Mod.Vidcutter.Utils.Installers;
 
 namespace Celeste.Mod.Vidcutter;
 
@@ -77,7 +79,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     }
 
     private void GotoVideoList(string ffmpegDirectory) {
-        OuiModOptions.Instance.Overworld.Goto<OuiVideoList>().Configure(new FFmpegService(ffmpegDirectory, Crf), this);
+        OuiModOptions.Instance.Overworld.Goto<OuiVideoList>().Configure(new FFmpegService(ffmpegDirectory, Crf), VideoFolder, ClipDelays.FromSettings(this));
     }
 
     [SettingName("MODOPTIONS_VIDCUTTER_CUTFROMLASTSAVESTATE")]

@@ -1,6 +1,6 @@
 using Celeste.Mod.Vidcutter.Models;
 
-namespace Celeste.Mod.Vidcutter.Utils;
+namespace Celeste.Mod.Vidcutter.Services.GameplayClips;
 
 public class GameplayClipFactory(ClipDelays delays) {
     public GameplayClip Create(LoggedString start, LoggedString end) {

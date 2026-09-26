@@ -1,18 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using Celeste.Mod.Vidcutter.Models;
-using Celeste.Mod.Vidcutter.Utils.Logs;
 
-namespace Celeste.Mod.Vidcutter.Utils;
+namespace Celeste.Mod.Vidcutter.Services.GameplayClips;
 
 public class ClipProcessor(ClipDelays delays) {
     private readonly GameplayClipFactory _clipFactory = new(delays);
 
     public ClipProcessor() : this(new ClipDelays(0, 0, 0)) { }
-
-    public List<GameplayClip> GetClips(VideoFile video) {
-        return GetClipsFromLogs(LogService.GetAllLogs(video));
-    }
 
     public List<GameplayClip> GetClipsFromLogs(List<LoggedString> parsedLines) {
         List<GameplayClip> processedClips = [];

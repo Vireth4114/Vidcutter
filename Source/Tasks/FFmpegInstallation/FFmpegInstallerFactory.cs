@@ -1,6 +1,7 @@
 using System;
+using Celeste.Mod.Vidcutter.Progress;
 
-namespace Celeste.Mod.Vidcutter.Utils.Installers;
+namespace Celeste.Mod.Vidcutter.Tasks.FFmpegInstallation;
 
 public static class FFmpegInstallerFactory {
     public static FFmpegInstaller Create(IProgress progress) {

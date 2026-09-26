@@ -1,9 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using Celeste.Mod.UI;
-using Celeste.Mod.Vidcutter.Utils;
 
-namespace Celeste.Mod.Vidcutter.UI;
+namespace Celeste.Mod.Vidcutter.Progress;
 
 class OuiLoggedProgressFromVidcutter : OuiLoggedProgress;
 
