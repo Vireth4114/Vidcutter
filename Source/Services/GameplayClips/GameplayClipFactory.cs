@@ -1,3 +1,4 @@
+
 using Celeste.Mod.Vidcutter.Models;
 
 namespace Celeste.Mod.Vidcutter.Services.GameplayClips;

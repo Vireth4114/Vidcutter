@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -24,7 +23,7 @@ public static class SpeedrunToolImport {
 }
 
 public static class SpeedrunToolHooks {
-    private static VidcutterState State => VidcutterModule.State;
+    private static VidcutterState State => VidcutterState.Instance;
     private static bool _speedrunToolInstalled;
     private static object _saveLoadActionRegistered;
 

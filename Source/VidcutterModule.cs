@@ -1,6 +1,5 @@
 ﻿using System;
 using Celeste.Mod.Vidcutter.Hooks;
-using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
 
 namespace Celeste.Mod.Vidcutter;
@@ -10,8 +9,6 @@ public class VidcutterModule : EverestModule {
 
     public override Type SettingsType => typeof(VidcutterModuleSettings);
     public static VidcutterModuleSettings Settings => (VidcutterModuleSettings)Instance._Settings;
-
-    public static readonly VidcutterState State = new();
 
     public VidcutterModule() {
         Instance = this;

@@ -1,6 +1,5 @@
 using System;
 using System.Reflection;
-using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
 using Microsoft.Xna.Framework;
 using MonoMod.RuntimeDetour;
@@ -8,7 +7,7 @@ using MonoMod.RuntimeDetour;
 namespace Celeste.Mod.Vidcutter.Hooks;
 
 public static class VivHelperHooks {
-    private static VidcutterState State => VidcutterModule.State;
+    private static VidcutterState State => VidcutterState.Instance;
     
     private static EverestModule _vivHelperModule;
     private static Hook _segmentedRoomPassedHook;

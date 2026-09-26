@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -8,7 +7,7 @@ using Monocle;
 namespace Celeste.Mod.Vidcutter.Hooks;
 
 public static class VanillaLoggingHooks {
-    private static VidcutterState State => VidcutterModule.State;
+    private static VidcutterState State => VidcutterState.Instance;
     
     private static void OnComplete(Level level) {
         LogService.Log("LEVEL COMPLETE", session: level.Session, state: State);

@@ -9,12 +9,14 @@ using Celeste.Mod.Vidcutter.Utils;
 namespace Celeste.Mod.Vidcutter.Tasks;
 
 public class CutClipFromLastVideo {
+    private readonly IProgress _progress;
     private readonly string _videoFolder;
     private readonly VideoFile _lastVideoFile;
     private readonly GameplayClip _clip;
     private readonly FFmpegService _ffmpegService;
     
-    public CutClipFromLastVideo(FFmpegService ffmpegService, string videoFolder, GameplayClip clip) {
+    public CutClipFromLastVideo(IProgress progress, FFmpegService ffmpegService, string videoFolder, GameplayClip clip) {
+        _progress = progress;
         _ffmpegService = ffmpegService;
         if (!Directory.Exists(videoFolder))
             throw new VideoProcessingException("VIDCUTTER_TOOLTIP_VIDEO_FOLDER_NOT_FOUND");
@@ -42,18 +44,18 @@ public class CutClipFromLastVideo {
         return VideoUtils.GetOutputVideoName(_videoFolder, _clip.Level);
     }
 
-    public void Execute(IProgress progress) {
-        progress.Message = Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSING_VIDEO");
-        progress.Task = new Task(() =>
+    public void Execute() {
+        _progress.Message = Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSING_VIDEO");
+        _progress.Task = new Task(() =>
             _ffmpegService.CutClip(
                 _lastVideoFile.FilePath,
                 _clip.StartTimeWithDelay - _lastVideoFile.CreationTime,
                 _clip.EndTimeWithDelay - _lastVideoFile.CreationTime,
                 GetOutputFileName(),
-                newProgress => progress.Progress = newProgress
+                newProgress => _progress.Progress = newProgress
             )
         );
         
-        progress.StartAfterDelay(_lastVideoFile.IsStillWriting() ? 5f : 0f);
+        _progress.StartAfterDelay(_lastVideoFile.IsStillWriting() ? 5f : 0f);
     }
 }

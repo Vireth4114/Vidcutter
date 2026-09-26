@@ -11,7 +11,7 @@ using Monocle;
 namespace Celeste.Mod.Vidcutter.Hooks;
 
 public static class HotkeyHooks {
-    private static VidcutterState State => VidcutterModule.State;
+    private static VidcutterState State => VidcutterState.Instance;
     private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
 
     private static void OnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
@@ -37,12 +37,12 @@ public static class HotkeyHooks {
                 
             FFmpegService ffmpegService = new(ffmpegInstaller.FFmpegDirectory, Settings.Crf);
 
-            CutClipFromLastVideo cutClipFromLastVideo = new(ffmpegService, Settings.VideoFolder, clip);
-            
             TooltipWithProgress progress = TooltipWithProgress.Get();
+            CutClipFromLastVideo cutClipFromLastVideo = new(progress, ffmpegService, Settings.VideoFolder, clip);
+            
             progress.OnComplete += () => SimpleTooltip.Show($"{cutClipFromLastVideo.GetOutputFileName()} {Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSED_VIDEO")}");
             
-            cutClipFromLastVideo.Execute(TooltipWithProgress.Get());
+            cutClipFromLastVideo.Execute();
         } catch (VideoProcessingException exception) {
             SimpleTooltip.Show(Dialog.Clean(exception.DialogId));
         }
