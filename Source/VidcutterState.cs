@@ -7,7 +7,7 @@ public class VidcutterState {
     private VidcutterState() {
         Instance = this;
     }
-    public static VidcutterState Instance { get; private set; }
+    public static VidcutterState Instance { get; private set; } = new();
 
     public Vector2? PreviousRespawnPoint = null;
     public bool LogWhenCloseToSpawnPoint = false;
