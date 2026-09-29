@@ -52,7 +52,7 @@ public static class LogService {
         writer.WriteLogs(allLogs);
     }
 
-    public static void Log(string message, Session session, VidcutterState state) {
+    public static void Log(string message, Session session, LoggingState state) {
         if (_writer == null) throw new Exception("Writer not initialized");
         LoggedString log = LoggedString.GetFromSession(message, session);
         

@@ -2,7 +2,7 @@ using Celeste.Mod.Vidcutter.Services.Logs;
 
 namespace Celeste.Mod.Vidcutter.Hooks;
 
-public static class LogFileHooks {
+public class LogFileHooks : IHook {
     private static void OnLevelBegin(On.Celeste.Level.orig_Begin orig, Level self) {
         LogService.SwitchToWriter();
         orig(self);
@@ -13,12 +13,12 @@ public static class LogFileHooks {
         LogService.SwitchToReader();
     }
     
-    public static void Load() {
+    public void Load() {
         On.Celeste.Level.Begin += OnLevelBegin;
         On.Celeste.Level.End += OnLevelEnd;
     }
 
-    public static void Unload() {
+    public void Unload() {
         On.Celeste.Level.Begin -= OnLevelBegin;
         On.Celeste.Level.End -= OnLevelEnd;
     }

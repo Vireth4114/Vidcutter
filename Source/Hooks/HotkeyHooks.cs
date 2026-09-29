@@ -10,12 +10,12 @@ using Monocle;
 
 namespace Celeste.Mod.Vidcutter.Hooks;
 
-public static class HotkeyHooks {
-    private static VidcutterState State => VidcutterState.Instance;
-    private static VidcutterModuleSettings Settings => VidcutterModule.Settings;
+public class HotkeyHooks(VidcutterModuleSettings settings, LoggingState state) : IHook {
+    private static LoggingState _state;
+    private static VidcutterModuleSettings _settings;
 
     private static void OnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
-        if (Settings.CutFromLastSaveState.Pressed) {
+        if (_settings.CutFromLastSaveState.Pressed) {
             CutClipFromLastSaveState();
         }
         orig(self, gameTime);
@@ -29,16 +29,16 @@ public static class HotkeyHooks {
         }
 
         try {
-            if (State.LastState == null)
+            if (_state.LastState == null)
                 throw new VideoProcessingException("VIDCUTTER_TOOLTIP_STATE_NOT_FOUND");
                 
-            GameplayClipFactory clipFactory = new(ClipDelays.FromSettings(Settings));
-            GameplayClip clip = clipFactory.Create(State.LastState, State.LastEvent);
+            GameplayClipFactory clipFactory = new(ClipDelays.FromSettings(_settings));
+            GameplayClip clip = clipFactory.Create(_state.LastState, _state.LastEvent);
                 
-            FFmpegService ffmpegService = new(ffmpegInstaller.FFmpegDirectory, Settings.Crf);
+            FFmpegService ffmpegService = new(ffmpegInstaller.FFmpegDirectory, _settings.Crf);
 
             TooltipWithProgress progress = TooltipWithProgress.Get();
-            CutClipFromLastVideo cutClipFromLastVideo = new(progress, ffmpegService, Settings.VideoFolder, clip);
+            CutClipFromLastVideo cutClipFromLastVideo = new(progress, ffmpegService, _settings.VideoFolder, clip);
             
             progress.OnComplete += () => SimpleTooltip.Show($"{cutClipFromLastVideo.GetOutputFileName()} {Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSED_VIDEO")}");
             
@@ -48,11 +48,13 @@ public static class HotkeyHooks {
         }
     }
 
-    public static void Load() {
+    public void Load() {
+        _state = state;
+        _settings = settings;
         On.Monocle.Engine.Update += OnUpdate;
     }
 
-    public static void Unload() {
+    public void Unload() {
         On.Monocle.Engine.Update -= OnUpdate;
     }
 }

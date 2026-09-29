@@ -1,19 +1,26 @@
+using System.Collections.Generic;
+using Celeste.Mod.Vidcutter.Models;
+
 namespace Celeste.Mod.Vidcutter.Hooks;
 
-public static class HookManager {
-    public static void LoadAll() {
-        VanillaLoggingHooks.Load();
-        VivHelperHooks.Load();
-        SpeedrunToolHooks.Load();
-        LogFileHooks.Load();
-        HotkeyHooks.Load();
+public class HookManager(VidcutterModuleSettings settings, LoggingState state) {
+    private readonly List<IHook> _hooks = [
+        new VanillaLoggingHooks(state),
+        new VivHelperHooks(state),
+        new SpeedrunToolHooks(state),
+        new HotkeyHooks(settings, state),
+        new LogFileHooks()
+    ];
+
+    public void LoadAll() {
+        foreach (IHook hook in _hooks) {
+            hook.Load();
+        }
     }
 
-    public static void UnloadAll() {
-        VanillaLoggingHooks.Unload();
-        VivHelperHooks.Unload();
-        SpeedrunToolHooks.Unload();
-        LogFileHooks.Unload();
-        HotkeyHooks.Unload();
+    public void UnloadAll() {
+        foreach (IHook hook in _hooks) {
+            hook.Unload();
+        }
     } 
 }

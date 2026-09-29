@@ -1,30 +1,31 @@
 using System;
 using System.Reflection;
+using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
 using Microsoft.Xna.Framework;
 using MonoMod.RuntimeDetour;
 
 namespace Celeste.Mod.Vidcutter.Hooks;
 
-public static class VivHelperHooks {
-    private static VidcutterState State => VidcutterState.Instance;
+public class VivHelperHooks(LoggingState state) : IHook {
+    private static LoggingState _state;
     
-    private static EverestModule _vivHelperModule;
-    private static Hook _segmentedRoomPassedHook;
-    private static Assembly _vivHelperAsm;
+    private EverestModule _vivHelperModule;
+    private Hook _segmentedRoomPassedHook;
+    private Assembly _vivHelperAsm;
 
     private static Level OnPassingSegmentedRoom(Func<Level, Level> orig, Level level) {
         Vector2? respawnPoint = level.Session.RespawnPoint;
         Level returnValue = orig(level);
         Vector2? newRespawnPoint = returnValue.Session.RespawnPoint;
         if (respawnPoint != newRespawnPoint) {
-            LogService.Log($"BACK TO START OF INTER ROOM", session: level.Session, state: State);
-            State.PreviousRespawnPoint = newRespawnPoint;
+            LogService.Log($"BACK TO START OF INTER ROOM", level.Session, _state);
+            _state.PreviousRespawnPoint = newRespawnPoint;
         }
         return returnValue;
     }
 
-    private static void LoadPassingSegmentedRoomHook() {
+    private void LoadPassingSegmentedRoomHook() {
         if (_vivHelperAsm == null)
             return;
         
@@ -46,7 +47,8 @@ public static class VivHelperHooks {
         _segmentedRoomPassedHook = new Hook(target, hookInfo);
     }
     
-    public static void Load() {
+    public void Load() {
+        _state = state;
         EverestModuleMetadata vivHelper = new() {
             Name = "VivHelper",
             Version = new Version(1, 14, 0)
@@ -64,7 +66,7 @@ public static class VivHelperHooks {
         LoadPassingSegmentedRoomHook();
     }
 
-    public static void Unload() {
+    public void Unload() {
         _segmentedRoomPassedHook?.Dispose();
         _segmentedRoomPassedHook = null;
     }

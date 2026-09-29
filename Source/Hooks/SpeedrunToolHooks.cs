@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -22,25 +23,27 @@ public static class SpeedrunToolImport {
     public static Action<object> Unregister;
 }
 
-public static class SpeedrunToolHooks {
-    private static VidcutterState State => VidcutterState.Instance;
-    private static bool _speedrunToolInstalled;
-    private static object _saveLoadActionRegistered;
+public class SpeedrunToolHooks(LoggingState state) : IHook {
+    private static LoggingState _state;
+    
+    private bool _speedrunToolInstalled;
+    private object _saveLoadActionRegistered;
 
     private static void OnLoadState(Level level) {
         Vector2? playerPosition = level.Tracker.GetEntity<Player>()?.Position;
         if (playerPosition == level.Session.RespawnPoint) {
-            LogService.Log("STATE ON RESPAWN POINT", session: level.Session, state: State);
+            LogService.Log("STATE ON RESPAWN POINT", level.Session, _state);
         } else {   
-            LogService.Log("STATE", session: level.Session, state: State);
-            State.IsFromASavestate = true;
+            LogService.Log("STATE", level.Session, _state);
+            _state.IsFromASavestate = true;
         }
-        State.LastState = State.LastEvent;
-        State.LogWhenCloseToSpawnPoint = false;
-        State.PreviousRespawnPoint = level.Session.RespawnPoint;
+        _state.LastState = _state.LastEvent;
+        _state.LogWhenCloseToSpawnPoint = false;
+        _state.PreviousRespawnPoint = level.Session.RespawnPoint;
     }
 
-    public static void Load() {
+    public void Load() {
+        _state = state;
         typeof(SpeedrunToolImport).ModInterop();
         _speedrunToolInstalled = SpeedrunToolImport.IgnoreSaveState is not null;
         
@@ -56,7 +59,7 @@ public static class SpeedrunToolHooks {
         }
     }
 
-    public static void Unload() {
+    public void Unload() {
         if (_speedrunToolInstalled) {
             SpeedrunToolImport.Unregister(_saveLoadActionRegistered);
         }
