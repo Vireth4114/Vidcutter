@@ -1,9 +1,6 @@
-using System;
 using Celeste.Mod.Vidcutter.Models;
 using Microsoft.Xna.Framework;
-using Monocle;
 using static Celeste.TextMenu;
-using static Celeste.TextMenuExt;
 
 namespace Celeste.Mod.Vidcutter.UI;
 
@@ -12,8 +9,8 @@ public class LevelRow : Button {
     private string LabelIndex => Index >= 0 ? $"{Index + 1}." : "";
     private bool Colored => Index >= 0;
     
-    public readonly LevelInAVideo Data;
-    public readonly CustomEaseInSubHeader SubHeader;
+    public LevelInAVideo Data { get; }
+    public CustomEaseInSubHeader SubHeader { get; }
 
     public LevelRow(LevelInAVideo levelInAVideo) : base(GetLabel(levelInAVideo)) {
         Index = -1;
@@ -49,31 +46,5 @@ public class LevelRow : Button {
         Vector2 positionIndex = position + new Vector2(-100f, 0f);
         ActiveFont.DrawOutline(LabelIndex, positionIndex, justify, Vector2.One, color, 2f, strokeColor);
         ActiveFont.DrawOutline(Label, position, justify, Vector2.One, color, 2f, strokeColor);
-    }
-}
-
-public class CustomEaseInSubHeader : SubHeaderExt {
-    private float _uneasedAlpha;
-    public bool FadeVisible { get; set; }
-
-    public CustomEaseInSubHeader(string title) : base(title) {
-        Alpha = 0f;
-        _uneasedAlpha = Alpha;
-        TextColor = Color.Gray;
-        HeightExtra = 0f;
-    }
-
-    public override float Height() {
-        return MathHelper.Lerp(-4f, base.Height(), Alpha);
-    }
-
-    public override void Update() {
-        base.Update();
-        float target = FadeVisible ? 1 : 0;
-        if (Math.Abs(_uneasedAlpha - target) > 0.001f) {
-            _uneasedAlpha = Calc.Approach(_uneasedAlpha, target, Engine.RawDeltaTime * 3f);
-            Alpha = FadeVisible ? Ease.SineOut(_uneasedAlpha) : Ease.SineIn(_uneasedAlpha);
-        }
-        Visible = Alpha != 0.0;
     }
 }

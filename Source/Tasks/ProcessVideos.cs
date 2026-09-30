@@ -16,7 +16,7 @@ namespace Celeste.Mod.Vidcutter.Tasks;
 public class ProcessVideos(IProgress progress, FFmpegService ffmpegService, ClipDelays delays, string outputFolder) {
     private static readonly string ClipsIndexFile = Path.Combine(VidcutterWorkingDirectory, "videos.txt");
     private readonly ClipProcessor _clipProcessor = new(delays);
-    private VideoFileRepository VideoFileRepository => new(ffmpegService);
+    private VideoFileRepository VideoFileRepository => new(new VideoDurationProvider(ffmpegService));
     
 
     public void Execute(List<LevelInAVideo> rows, Action onComplete = null) {
@@ -73,7 +73,7 @@ public class ProcessVideos(IProgress progress, FFmpegService ffmpegService, Clip
         return clipIdx;
     }
 
-    private void CleanCreatedFiles() {
+    private static void CleanCreatedFiles() {
         File.Delete(Path.Combine(ClipsIndexFile));
         Directory.GetFiles(VidcutterWorkingDirectory, "*.mp4").ToList().ForEach(File.Delete);
     }

@@ -1,13 +1,11 @@
 ﻿using System;
 using Celeste.Mod.Vidcutter.Hooks;
-using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
 
 namespace Celeste.Mod.Vidcutter;
 
 public class VidcutterModule : EverestModule {
     private static VidcutterModule Instance { get; set; }
-    private readonly HookManager _hookManager = new(Settings, new LoggingState());
 
     public override Type SettingsType => typeof(VidcutterModuleSettings);
     private static VidcutterModuleSettings Settings => (VidcutterModuleSettings)Instance._Settings;
@@ -22,11 +20,11 @@ public class VidcutterModule : EverestModule {
     }
 
     public override void Load() {
-        _hookManager.LoadAll();
+        HookManager.LoadAll(Settings);
     }
 
     public override void Unload() {
-        _hookManager.UnloadAll();
+        HookManager.UnloadAll();
         LogService.Close();
     }
 }

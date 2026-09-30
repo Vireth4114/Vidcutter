@@ -4,48 +4,33 @@ using System.IO;
 using System.Linq;
 using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
-using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
 namespace Celeste.Mod.Vidcutter.Services;
 
-public class VideoFileRepository(FFmpegService fFmpegService) {
-    private static readonly string DurationCacheFile = Path.Combine(VidcutterWorkingDirectory, "durationCache.txt");
-    private static readonly Dictionary<string, TimeSpan> DurationCache = new();
-    private static readonly Dictionary<string, VideoFile> VideoFileCache = new();
-    private static readonly Dictionary<string, bool> CanBeProcessed = new();
+public class VideoFileRepository(VideoDurationProvider videoDurationProvider) {
+    private readonly Dictionary<string, VideoFile> _videoFileCache = new();
+    private readonly Dictionary<string, bool> _canBeProcessed = new();
 
-    private static bool _isDurationCacheLoaded;
-    
-    private static void LoadDurationCache() {
-        if (!File.Exists(DurationCacheFile))
-            return;
-
-        DurationCache.Clear();
-        string[] lines = File.ReadAllLines(DurationCacheFile);
-        foreach (string line in lines) {
-            string[] parts = line.Split(" | ");
-            if (parts.Length == 2) {
-                DurationCache[parts[0]] = TimeSpan.Parse(parts[1]);
-            }
-        }
-        _isDurationCacheLoaded = true;
-    }
-
-    public VideoFile Get(string filePath) {
-        if (!_isDurationCacheLoaded)
-            LoadDurationCache();
+    private TimeSpan? GetVideoDuration(string filePath) {
+        bool success = videoDurationProvider.TryGetVideoDuration(filePath, out TimeSpan duration, out bool canBeProcessed);
         
-        if (VideoFileCache.TryGetValue(filePath, out VideoFile cachedVideoFile))
+        _canBeProcessed[filePath] = canBeProcessed;
+
+        return success ? duration : null;
+    }
+    
+    public VideoFile Get(string filePath) {
+        if (_videoFileCache.TryGetValue(filePath, out VideoFile cachedVideoFile))
             return cachedVideoFile;
 
         VideoFile videoFile = new(
             filePath,
             GetCreationTime(filePath),
             GetEndTime(filePath),
-            CanBeProcessed.GetValueOrDefault(filePath, true)
+            _canBeProcessed.GetValueOrDefault(filePath, true)
         );
         if (!videoFile.IsStillWriting()) {
-            VideoFileCache[filePath] = videoFile;
+            _videoFileCache[filePath] = videoFile;
         }
 
         return videoFile;
@@ -75,7 +60,7 @@ public class VideoFileRepository(FFmpegService fFmpegService) {
         if (OperatingSystem.IsWindows())
             return File.GetCreationTime(filePath);
         
-        if (TryGetVideoDurationFromMetadata(filePath, out TimeSpan duration))
+        if (GetVideoDuration(filePath) is { } duration)
             return File.GetLastWriteTime(filePath) - duration;
         
         if (DateTime.TryParse(Path.GetFileName(filePath), out DateTime fileNameDate))
@@ -87,44 +72,10 @@ public class VideoFileRepository(FFmpegService fFmpegService) {
     }
 
     private DateTime GetEndTime(string filePath) {
-        if (OperatingSystem.IsWindows() && TryGetVideoDurationFromMetadata(filePath, out TimeSpan duration))
+        if (OperatingSystem.IsWindows() && GetVideoDuration(filePath) is { } duration)
             return File.GetCreationTime(filePath) + duration;
         
         return File.GetLastWriteTime(filePath);
     }
     
-    private bool TryGetVideoDurationFromMetadata(string filePath, out TimeSpan duration) {
-        if (DurationCache.TryGetValue(filePath, out duration)) {
-            return true;
-        }
-        
-        string strDuration;
-        try {
-            strDuration = fFmpegService.GetDurationFromFFprobe(filePath);
-        } catch (InvalidOperationException) {
-            // If ffprobe throw an exception on the video, ffmpeg can't process it either
-            CanBeProcessed[filePath] = false;
-            return false;
-        }
-
-        if (!double.TryParse(strDuration, out double durationDouble) || durationDouble <= 0) {
-            // ffprobe can process the video but doesn't know its duration, may be a running mkv or missing metadata
-            return false;
-        }
-        
-        duration = TimeSpan.FromSeconds(durationDouble);
-        CanBeProcessed[filePath] = true;
-        WriteCacheInFile(filePath, duration);
-        return true;
-    }
-
-
-    private void WriteCacheInFile(string video, TimeSpan duration) {
-        if (!DurationCache.TryAdd(video, duration))
-            return;
-        
-        using StreamWriter writer = new(DurationCacheFile, false);
-        foreach (KeyValuePair<string, TimeSpan> entry in DurationCache)
-            writer.WriteLine($"{entry.Key} | {entry.Value}");
-    }
 }

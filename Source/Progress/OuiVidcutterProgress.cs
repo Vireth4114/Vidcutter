@@ -4,18 +4,18 @@ using Celeste.Mod.UI;
 
 namespace Celeste.Mod.Vidcutter.Progress;
 
-class OuiLoggedProgressFromVidcutter : OuiLoggedProgress {
-    private Action _onComplete;
-
-    public void SetOnFinish(Action onComplete) {
-        if (_onComplete != null) {
-            OnFinish -= _onComplete;
-        }
-        OnFinish += _onComplete = onComplete;
-    }
-}
-
 public class OuiVidcutterProgress(string title): IProgress {
+    sealed class OuiLoggedProgressFromVidcutter : OuiLoggedProgress {
+        private Action _onComplete;
+
+        internal void SetOnFinish(Action onComplete) {
+            if (_onComplete != null) {
+                OnFinish -= _onComplete;
+            }
+            OnFinish += _onComplete = onComplete;
+        }
+    }
+    
     private OuiLoggedProgressFromVidcutter _loggedProgress;
 
     private static Overworld Overworld => OuiModOptions.Instance.Overworld;

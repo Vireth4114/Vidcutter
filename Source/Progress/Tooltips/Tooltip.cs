@@ -7,7 +7,7 @@ namespace Celeste.Mod.Vidcutter.Progress.Tooltips;
 public abstract class Tooltip : Entity {
     private const int Padding = 25;
     public string Message { get; set; }
-    protected float Alpha;
+    protected float Alpha { get; private set; }
     private float _unEasedAlpha;
 
     protected Tooltip() {

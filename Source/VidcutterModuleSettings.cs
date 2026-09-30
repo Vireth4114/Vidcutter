@@ -10,7 +10,7 @@ using Celeste.Mod.Vidcutter.UI;
 namespace Celeste.Mod.Vidcutter;
 
 [SettingName("MODOPTIONS_VIDCUTTER_TITLE")]
-public class VidcutterModuleSettings : EverestModuleSettings {
+public class VidcutterModuleSettings : EverestModuleSettings, ISettings {
     [SettingName("MODOPTIONS_VIDCUTTER_VIDEOFOLDER")]
     [SettingSubText("MODOPTIONS_VIDCUTTER_VIDEOFOLDER_SUB")]
     [SettingMaxLength(200)]
@@ -63,7 +63,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
         }
         menu.Add(new TextMenu.Button(Dialog.Clean("MODOPTIONS_VIDCUTTER_CUTVIDEOS")) {
             OnPressed = () => {
-                FFmpegInstaller ffmpegInstaller = FFmpegInstallerFactory.Create(
+                FFmpegInstallerBase ffmpegInstaller = FFmpegInstallerFactory.Create(
                     new OuiVidcutterProgress(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"))
                 );
 
@@ -79,9 +79,11 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     }
 
     private void GotoVideoList(string ffmpegDirectory) {
-        OuiModOptions.Instance.Overworld.Goto<OuiVideoList>().Configure(new FFmpegService(ffmpegDirectory, Crf), VideoFolder, ClipDelays.FromSettings(this));
+        OuiModOptions.Instance.Overworld.Goto<OuiVideoList>().Configure(new FFmpegService(ffmpegDirectory, Crf), this);
     }
 
     [SettingName("MODOPTIONS_VIDCUTTER_CUTFROMLASTSAVESTATE")]
     public ButtonBinding CutFromLastSaveState { get; set; }
+    
+    
 }

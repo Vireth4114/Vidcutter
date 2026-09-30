@@ -26,7 +26,7 @@ public class CutClipFromLastVideo {
             throw new VideoProcessingException("VIDCUTTER_TOOLTIP_VIDEO_NOT_FOUND");
         
         _videoFolder = videoFolder;
-        VideoFileRepository videoFileRepository = new(ffmpegService);
+        VideoFileRepository videoFileRepository = new(new VideoDurationProvider(ffmpegService));
         _lastVideoFile = videoFileRepository.Get(Path.Combine(videoFolder, lastVideo));
         _clip = clip;
         Validate();

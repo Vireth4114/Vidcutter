@@ -7,7 +7,7 @@ using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
 namespace Celeste.Mod.Vidcutter.Tasks.FFmpegInstallation;
 
-public abstract class FFmpegInstaller(IProgress progress) {
+public abstract class FFmpegInstallerBase(IProgress progress) {
     private const string BaseDownloadUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download";
     
     private static string FFmpegBaseDirectory => Path.Combine(VidcutterWorkingDirectory, "ffmpeg");

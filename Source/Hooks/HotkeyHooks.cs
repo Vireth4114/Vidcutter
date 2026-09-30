@@ -10,35 +10,35 @@ using Monocle;
 
 namespace Celeste.Mod.Vidcutter.Hooks;
 
-public class HotkeyHooks(VidcutterModuleSettings settings, LoggingState state) : IHook {
-    private static LoggingState _state;
-    private static VidcutterModuleSettings _settings;
+public class HotkeyHooks : IHook {
+    private static HookState State => HookManager.State;
+    private static ISettings Settings => HookManager.Settings;
 
     private static void OnUpdate(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
-        if (_settings.CutFromLastSaveState.Pressed) {
+        if (Settings.CutFromLastSaveState.Pressed) {
             CutClipFromLastSaveState();
         }
         orig(self, gameTime);
     }
 
     private static void CutClipFromLastSaveState() {
-        FFmpegInstaller ffmpegInstaller = FFmpegInstallerFactory.Create(TooltipWithProgress.Get());
+        FFmpegInstallerBase ffmpegInstaller = FFmpegInstallerFactory.Create(TooltipWithProgress.Get());
         if (!ffmpegInstaller.IsFFmpegInstalled()) {
             ffmpegInstaller.InstallFFmpegAsynchronously(onComplete: CutClipFromLastSaveState);
             return;
         }
 
         try {
-            if (_state.LastState == null)
+            if (State.LastState == null)
                 throw new VideoProcessingException("VIDCUTTER_TOOLTIP_STATE_NOT_FOUND");
                 
-            GameplayClipFactory clipFactory = new(ClipDelays.FromSettings(_settings));
-            GameplayClip clip = clipFactory.Create(_state.LastState, _state.LastEvent);
+            GameplayClipFactory clipFactory = new(Settings.GetClipDelays());
+            GameplayClip clip = clipFactory.Create(State.LastState, State.LastEvent);
                 
-            FFmpegService ffmpegService = new(ffmpegInstaller.FFmpegDirectory, _settings.Crf);
+            FFmpegService ffmpegService = new(ffmpegInstaller.FFmpegDirectory, Settings.Crf);
 
             TooltipWithProgress progress = TooltipWithProgress.Get();
-            CutClipFromLastVideo cutClipFromLastVideo = new(progress, ffmpegService, _settings.VideoFolder, clip);
+            CutClipFromLastVideo cutClipFromLastVideo = new(progress, ffmpegService, Settings.VideoFolder, clip);
             
             progress.OnComplete += () => SimpleTooltip.Show($"{cutClipFromLastVideo.GetOutputFileName()} {Dialog.Clean("VIDCUTTER_TOOLTIP_PROCESSED_VIDEO")}");
             
@@ -49,8 +49,6 @@ public class HotkeyHooks(VidcutterModuleSettings settings, LoggingState state) :
     }
 
     public void Load() {
-        _state = state;
-        _settings = settings;
         On.Monocle.Engine.Update += OnUpdate;
     }
 

@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Celeste.Mod.Vidcutter.Models;
-using Celeste.Mod.Vidcutter.Services.Logs;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.ModInterop;
@@ -23,8 +21,8 @@ public static class SpeedrunToolImport {
     public static Action<object> Unregister;
 }
 
-public class SpeedrunToolHooks(LoggingState state) : IHook {
-    private static LoggingState _state;
+public class SpeedrunToolHooks : IHook {
+    private static HookState State => HookManager.State;
     
     private bool _speedrunToolInstalled;
     private object _saveLoadActionRegistered;
@@ -32,18 +30,17 @@ public class SpeedrunToolHooks(LoggingState state) : IHook {
     private static void OnLoadState(Level level) {
         Vector2? playerPosition = level.Tracker.GetEntity<Player>()?.Position;
         if (playerPosition == level.Session.RespawnPoint) {
-            LogService.Log("STATE ON RESPAWN POINT", level.Session, _state);
+            HookManager.Log("STATE ON RESPAWN POINT", level.Session);
         } else {   
-            LogService.Log("STATE", level.Session, _state);
-            _state.IsFromASavestate = true;
+            HookManager.Log("STATE", level.Session);
+            State.IsFromASavestate = true;
         }
-        _state.LastState = _state.LastEvent;
-        _state.LogWhenCloseToSpawnPoint = false;
-        _state.PreviousRespawnPoint = level.Session.RespawnPoint;
+        State.LastState = State.LastEvent;
+        State.LogWhenCloseToSpawnPoint = false;
+        State.PreviousRespawnPoint = level.Session.RespawnPoint;
     }
 
     public void Load() {
-        _state = state;
         typeof(SpeedrunToolImport).ModInterop();
         _speedrunToolInstalled = SpeedrunToolImport.IgnoreSaveState is not null;
         

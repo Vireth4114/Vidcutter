@@ -16,7 +16,7 @@ using static Celeste.TextMenu;
 
 namespace Celeste.Mod.Vidcutter.UI;
 
-class OuiVideoList : Oui, OuiModOptions.ISubmenu {
+public class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     private const float OnScreenX = 960f;
     private const float OffScreenX = 2880f;
     private float _alpha;
@@ -29,19 +29,19 @@ class OuiVideoList : Oui, OuiModOptions.ISubmenu {
     
     private TextMenu _menu;
 
-    public void Configure(FFmpegService ffmpegService, string videoFolder, ClipDelays clipDelays) {
+    public void Configure(FFmpegService ffmpegService, ISettings settings) {
         _ffmpegService = ffmpegService;
-        _videoFolder = videoFolder;
+        _videoFolder = settings.VideoFolder;
         _processVideos = new ProcessVideos(
             new OuiVidcutterProgress(Dialog.Clean("VIDCUTTER_PROCESS_TITLE")),
             _ffmpegService,
-            clipDelays,
-            videoFolder
+            settings.GetClipDelays(),
+            settings.VideoFolder
         );
     }
 
     private void ReloadMenu() {
-        VideoFileRepository videoFileRepository = new(_ffmpegService);
+        VideoFileRepository videoFileRepository = new(new VideoDurationProvider(_ffmpegService));
         ClipProcessor clipProcessor = new();
         TextMenu oldMenu = _menu;
         if (oldMenu != null) {

@@ -1,8 +1,9 @@
+using Celeste.Mod.Vidcutter.Models;
 using Microsoft.Xna.Framework;
 
-namespace Celeste.Mod.Vidcutter.Models;
+namespace Celeste.Mod.Vidcutter.Hooks;
 
-public class LoggingState {
+public class HookState {
     public Vector2? PreviousRespawnPoint { get; set; }
     public bool LogWhenCloseToSpawnPoint { get; set; }
     public bool IsFromASavestate { get; set; }

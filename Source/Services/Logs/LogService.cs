@@ -6,31 +6,31 @@ using Celeste.Mod.Vidcutter.Models;
 namespace Celeste.Mod.Vidcutter.Services.Logs;
 
 public static class LogService {
-    private static LogReader _reader;
-    private static LogWriter _writer;
+    private static ILogReader Reader { get; set; }
+    private static LogWriter Writer { get; set; }
 
     public static void SwitchToReader() {
-        if (_reader != null) return;
-        _reader = new CachedLogReader();
-        _writer?.Dispose();
-        _writer = null;
+        if (Reader != null) return;
+        Reader = new CachedLogReader();
+        Writer?.Dispose();
+        Writer = null;
     }
 
     public static void SwitchToWriter() {
-        if (_writer != null) return;
-        _writer = new LogWriter();
-        _reader = null;
+        if (Writer != null) return;
+        Writer = new LogWriter();
+        Reader = null;
     }
 
     public static void Close() {
-        _writer?.Dispose();
-        _writer = null;
-        _reader = null;
+        Writer?.Dispose();
+        Writer = null;
+        Reader = null;
     }
 
     public static List<LoggedString> GetAllLogs() {
-        if (_reader == null) throw new Exception("Reader not initialized");
-        return _reader.GetAllLogs();
+        if (Reader == null) throw new InvalidOperationException("Reader not initialized");
+        return Reader.GetAllLogs();
     }
 
     public static List<LoggedString> GetAllLogs(VideoFile video, string level = null) {
@@ -42,8 +42,8 @@ public static class LogService {
     }
     
     public static void DeleteLogs(List<LevelInAVideo> rows) {
-        if (_reader == null) throw new Exception("Reader not initialized");
-        List<LoggedString> allLogs = _reader.GetAllLogs();
+        if (Reader == null) throw new InvalidOperationException("Reader not initialized");
+        List<LoggedString> allLogs = Reader.GetAllLogs();
         
         foreach (LevelInAVideo row in rows)
             allLogs.RemoveAll(row.HasLog);
@@ -52,17 +52,8 @@ public static class LogService {
         writer.WriteLogs(allLogs);
     }
 
-    public static void Log(string message, Session session, LoggingState state) {
-        if (_writer == null) throw new Exception("Writer not initialized");
-        LoggedString log = LoggedString.GetFromSession(message, session);
-        
-        if (!state.IsFromASavestate && log.IsCleared()) {
-            if (state.LastEvent != null && !state.LastEvent.IsCleared()) {
-                _writer.WriteLog(state.LastEvent);
-            } 
-            _writer.WriteLog(log);
-        }
-
-        state.LastEvent = log;
+    public static void WriteLog(LoggedString log) {
+        if (Writer == null) throw new InvalidOperationException("Writer not initialized");
+        Writer.WriteLog(log);
     }
 }

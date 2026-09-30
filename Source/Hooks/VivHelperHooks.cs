@@ -1,14 +1,12 @@
 using System;
 using System.Reflection;
-using Celeste.Mod.Vidcutter.Models;
-using Celeste.Mod.Vidcutter.Services.Logs;
 using Microsoft.Xna.Framework;
 using MonoMod.RuntimeDetour;
 
 namespace Celeste.Mod.Vidcutter.Hooks;
 
-public class VivHelperHooks(LoggingState state) : IHook {
-    private static LoggingState _state;
+public class VivHelperHooks : IHook {
+    private static HookState State => HookManager.State;
     
     private EverestModule _vivHelperModule;
     private Hook _segmentedRoomPassedHook;
@@ -19,8 +17,8 @@ public class VivHelperHooks(LoggingState state) : IHook {
         Level returnValue = orig(level);
         Vector2? newRespawnPoint = returnValue.Session.RespawnPoint;
         if (respawnPoint != newRespawnPoint) {
-            LogService.Log($"BACK TO START OF INTER ROOM", level.Session, _state);
-            _state.PreviousRespawnPoint = newRespawnPoint;
+            HookManager.Log($"BACK TO START OF INTER ROOM", level.Session);
+            State.PreviousRespawnPoint = newRespawnPoint;
         }
         return returnValue;
     }
@@ -48,7 +46,6 @@ public class VivHelperHooks(LoggingState state) : IHook {
     }
     
     public void Load() {
-        _state = state;
         EverestModuleMetadata vivHelper = new() {
             Name = "VivHelper",
             Version = new Version(1, 14, 0)

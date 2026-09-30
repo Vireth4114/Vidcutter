@@ -2,8 +2,11 @@ using Celeste.Mod.Vidcutter.Services.Logs;
 
 namespace Celeste.Mod.Vidcutter.Hooks;
 
-public class LogFileHooks : IHook {
+public class LevelLifeCycleHooks : IHook {
+    private static HookState State => HookManager.State;
+
     private static void OnLevelBegin(On.Celeste.Level.orig_Begin orig, Level self) {
+        State.IsFromASavestate = false;
         LogService.SwitchToWriter();
         orig(self);
     }
