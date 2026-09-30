@@ -5,13 +5,10 @@ using Celeste.Mod.Vidcutter.Services.Logs;
 namespace Celeste.Mod.Vidcutter;
 
 public class VidcutterModule : EverestModule {
-    private static VidcutterModule Instance { get; set; }
-
     public override Type SettingsType => typeof(VidcutterModuleSettings);
-    private static VidcutterModuleSettings Settings => (VidcutterModuleSettings)Instance._Settings;
+    private VidcutterModuleSettings Settings => (VidcutterModuleSettings)_Settings;
 
     public VidcutterModule() {
-        Instance = this;
         Logger.SetLogLevel(nameof(VidcutterModule), LogLevel.Info);
     }
 
