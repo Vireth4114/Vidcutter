@@ -8,7 +8,7 @@
 ## Features
 
 - Cut your session recordings in clear videos (partial or complete)
-- Save your clips with F10 (from last savestate until last event, useful for speedrun showcases!)
+- Save your clips with F10 (from last savestate until last event, useful for speedrun showcases!), the keybind can be changed
 
 ## Note for Linux users
 
@@ -20,3 +20,10 @@ Please ensure your recording software is outputing a file matching this scenario
 
 It watches event on your map such a entering a room, leaving a room, collecting a strawberry... With a few exceptions such as permanent events (tokens, doors...) *it is planned tho*.  
 Due to how it works, installing Vidcutter **after** a clear won't be useful in any manner as the mod did not log any event for the map clear. You need to have the mod enabled from **start to end**.
+
+## Planned features
+
+- Log "permanent event" (happens one time and are always unlocked even after death), such as doors, tokens, etc.
+- Change audio and video codecs for special use/niche case
+- Allow map behavior with a config file (like CCT with the room orders for example) for maps that requires specific backtracking for example
+- Add death counter & room name in video to make the video clear a bit more "interesting"
