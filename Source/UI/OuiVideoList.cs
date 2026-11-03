@@ -1,0 +1,204 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using Celeste.Mod.UI;
+using Celeste.Mod.Vidcutter.Models;
+using Celeste.Mod.Vidcutter.Progress;
+using Celeste.Mod.Vidcutter.Services;
+using Celeste.Mod.Vidcutter.Services.GameplayClips;
+using Celeste.Mod.Vidcutter.Services.Logs;
+using Celeste.Mod.Vidcutter.Tasks;
+using Microsoft.Xna.Framework;
+using Monocle;
+using static Celeste.TextMenu;
+
+namespace Celeste.Mod.Vidcutter.UI;
+
+public class OuiVideoList : Oui, OuiModOptions.ISubmenu {
+    private const float OnScreenX = 960f;
+    private const float OffScreenX = 2880f;
+    private float _alpha;
+    private readonly ObservableCollection<LevelRow> _selectedRows = [];
+    private readonly List<LevelRow> _rows = [];
+    
+    private FFmpegService _ffmpegService;
+    private string _videoFolder;
+    private ProcessVideos _processVideos;
+    
+    private TextMenu _menu;
+
+    public void Configure(FFmpegService ffmpegService, ISettings settings) {
+        _ffmpegService = ffmpegService;
+        _videoFolder = settings.VideoFolder;
+        _processVideos = new ProcessVideos(
+            new OuiVidcutterProgress(Dialog.Clean("VIDCUTTER_PROCESS_TITLE")),
+            _ffmpegService,
+            settings.GetClipDelays(),
+            settings.VideoFolder
+        );
+    }
+
+    private void ReloadMenu() {
+        VideoFileRepository videoFileRepository = new(new VideoDurationProvider(_ffmpegService));
+        ClipProcessor clipProcessor = new();
+        TextMenu oldMenu = _menu;
+        if (oldMenu != null) {
+            Scene.Remove(oldMenu);
+        }
+        _menu = new TextMenu {
+            InnerContent = InnerContentMode.TwoColumn
+        };
+
+        _rows.Clear();
+        _selectedRows.Clear();
+
+        foreach (VideoFile video in videoFileRepository.GetAllVideos(_videoFolder)) {
+            HashSet<LevelInAVideo> rowsForVideo = clipProcessor.GetClipsFromLogs(LogService.GetAllLogs(video))
+                .GroupBy(clip => clip.Level)
+                .Select(g => new LevelInAVideo(video.FilePath, g.Key) {
+                    FirstLog = g.First().Start,
+                    LastLog = g.Last().End
+                })
+                .ToHashSet();
+            Logger.Info("Vidcutter", $"Video {video.FileName} has {rowsForVideo.Count} levels");
+            foreach (LevelRow row in rowsForVideo.Select(GetLevelRow)) {
+                _rows.Add(row);
+                _menu.Add(row);
+                _menu.Add(row.SubHeader);
+            }
+        }
+
+        if (_rows.Count == 0) {
+            _menu.Add(new SubHeader(Dialog.Clean("VIDCUTTER_NOVIDEO")));
+        } else {
+            _menu.Add(GetProcessButton());
+            _menu.Add(GetProcessAndDeleteButton());
+            _menu.Add(GetDeleteButton());
+        }
+
+        if (oldMenu != null) {
+            _menu.Selection = oldMenu.Selection;
+            _menu.Position = oldMenu.Position;
+        }
+
+        Scene.Add(_menu);
+    }
+
+    private LevelRow GetLevelRow(LevelInAVideo levelInAVideo) {
+        LevelRow row = new(levelInAVideo);
+        row.OnPressed += () => ToggleRow(row);
+        return row;
+    }
+
+    private void ToggleRow(LevelRow row) {
+        if (!_selectedRows.Remove(row)) {
+            _selectedRows.Add(row);
+        }
+
+        SynchronizeRowIndices();
+    }
+
+    private void SynchronizeRowIndices() {
+        foreach (LevelRow row in _rows) {
+            row.Index = _selectedRows.IndexOf(row);
+        }
+    }
+
+    private List<LevelInAVideo> GetRowsToProcess() {
+        return _selectedRows.Select(button => button.Data).ToList();
+    }
+
+    private Button GetButton(string label, Action onPressed) {
+        Button button = new(label) {
+            OnPressed = onPressed,
+            Disabled = true,
+            AlwaysCenter = true
+        };
+        _selectedRows.CollectionChanged += (_, _) => {
+            button.Disabled = _selectedRows.Count == 0;
+        };
+        return button;
+    }
+
+    private Button GetProcessButton() {
+        return GetButton(Dialog.Clean("VIDCUTTER_PROCESS"), () => {
+            _processVideos.Execute(
+                rows: GetRowsToProcess(),
+                onComplete: () => Overworld.Goto<OuiModOptions>()
+            );
+        });
+    }
+
+    private Button GetProcessAndDeleteButton() {
+        return GetButton(Dialog.Clean("VIDCUTTER_PROCESS_AND_DELETE"), () => {
+            _processVideos.Execute(
+                rows: GetRowsToProcess(),
+                onComplete: () => {
+                    LogService.DeleteLogs(GetRowsToProcess());
+                    Overworld.Goto<OuiModOptions>();
+                }
+            );
+        });
+    }
+
+    private Button GetDeleteButton() {
+        return GetButton(Dialog.Clean("VIDCUTTER_DELETE"), () => {
+            LogService.DeleteLogs(GetRowsToProcess());
+            OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
+        });
+    }
+
+    public override IEnumerator Enter(Oui from) {
+        Visible = true;
+
+        ReloadMenu();
+
+        _menu.Visible = true;
+        _menu.Focused = false;
+
+        for (float p = 0f; p < 1f; p += Engine.DeltaTime * 4f) {
+            _menu.X = OffScreenX + -1920f * Ease.CubeOut(p);
+            _alpha = Ease.CubeOut(p);
+            yield return null;
+        }
+
+        _menu.Focused = true;
+    }
+
+    public override IEnumerator Leave(Oui next) {
+        if (_menu != null) {
+            Audio.Play(SFX.ui_main_whoosh_large_out);
+            _menu.Focused = false;
+        }
+
+        for (float p = 0f; p < 1f; p += Engine.DeltaTime * 4f) {
+            _menu?.X = OnScreenX + 1920f * Ease.CubeIn(p);
+            _alpha = 1f - Ease.CubeIn(p);
+            yield return null;
+        }
+
+        if (_menu != null) {
+            _menu.Visible = Visible = false;
+            _menu.RemoveSelf();
+            _menu = null;
+        }
+    }
+
+    public override void Update() {
+        if (_menu is { Focused: true } && Selected && Input.MenuCancel.Pressed) {
+            Audio.Play(SFX.ui_main_button_back);
+            Overworld.Goto<OuiModOptions>();
+        }
+
+        base.Update();
+    }
+
+    public override void Render() {
+        if (_alpha > 0f)
+            Draw.Rect(-10f, -10f, 1940f, 1100f, Color.Black * _alpha * 0.4f);
+
+        base.Render();
+    }
+}

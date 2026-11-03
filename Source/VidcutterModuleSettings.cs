@@ -1,18 +1,16 @@
 using System;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
 using Celeste.Mod.UI;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
-using On.Celeste;
-using static Celeste.TextMenuExt;
+using Celeste.Mod.Vidcutter.Models;
+using Celeste.Mod.Vidcutter.Progress;
+using Celeste.Mod.Vidcutter.Services;
+using Celeste.Mod.Vidcutter.Tasks.FFmpegInstallation;
+using Celeste.Mod.Vidcutter.UI;
 
 namespace Celeste.Mod.Vidcutter;
 
 [SettingName("MODOPTIONS_VIDCUTTER_TITLE")]
-public class VidcutterModuleSettings : EverestModuleSettings {
+public class VidcutterModuleSettings : EverestModuleSettings, ISettings {
     [SettingName("MODOPTIONS_VIDCUTTER_VIDEOFOLDER")]
     [SettingSubText("MODOPTIONS_VIDCUTTER_VIDEOFOLDER_SUB")]
     [SettingMaxLength(200)]
@@ -32,7 +30,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     public float DelayEnd { get; set; } = 1.2f;
     public void CreateDelayEndEntry(TextMenu menu, bool inGame) {
         menu.Add(new TextMenu.Slider(Dialog.Clean("MODOPTIONS_VIDCUTTER_DELAYPASS"), i => $"{i/5.0}s", 0, 100, (int)(DelayEnd*5.0)) {
-            OnValueChange = (value) => {
+            OnValueChange = value => {
                 DelayEnd = value/5.0f;
             }
         });
@@ -42,7 +40,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     public int DelayComplete { get; set; } = 20;
     public void CreateDelayCompleteEntry(TextMenu menu, bool inGame) {
         menu.Add(new TextMenu.Slider(Dialog.Clean("MODOPTIONS_VIDCUTTER_DELAYCOMPLETE"), i => $"{i}s", 0, 300, DelayComplete) {
-            OnValueChange = (value) => {
+            OnValueChange = value => {
                 DelayComplete = value;
             }
         });
@@ -51,7 +49,7 @@ public class VidcutterModuleSettings : EverestModuleSettings {
     [SettingName("MODOPTIONS_VIDCUTTER_CRF")]
     [SettingSubText("MODOPTIONS_VIDCUTTER_CRF_SUB")]
     [SettingRange(0, 51)]
-    public int CRF { get; set; } = 27;
+    public int Crf { get; set; } = 27;
 
     [SettingIgnore]
     public string FFmpegPath { get; set; } = "";
@@ -65,29 +63,27 @@ public class VidcutterModuleSettings : EverestModuleSettings {
         }
         menu.Add(new TextMenu.Button(Dialog.Clean("MODOPTIONS_VIDCUTTER_CUTVIDEOS")) {
             OnPressed = () => {
-            OuiVidcutterProgress progress = OuiModOptions.Instance.Overworld.Goto<OuiVidcutterProgress>();
-                if (!Directory.Exists("./VidCutter/ffmpeg/ffmpeg")) {
-                    try {
-                        // Check for FFmpeg in PATH
-                        Process process = VideoCreation.createProcess("ffmpeg", "-version");
-                        process.Start();
-                        process.WaitForExit();
-                        FFmpegPath = "";
-                        OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
-                    } catch (Win32Exception) {
-                        progress.Init<OuiModOptions>(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"), new Task(() => {
-                            VidcutterModule.InstallFFmpeg(progress);
-                        }), 0);
-                        FFmpegPath = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-7.1-essentials_build", "bin") + "/";
-                    }
+                FFmpegInstallerBase ffmpegInstaller = FFmpegInstallerFactory.Create(
+                    new OuiVidcutterProgress(Dialog.Clean("VIDCUTTER_FFMPEG_TITLE"))
+                );
+
+                if (ffmpegInstaller.IsFFmpegInstalled()) {
+                    GotoVideoList(ffmpegInstaller.FFmpegDirectory);
                 } else {
-                    FFmpegPath = Path.Combine("./VidCutter/", "ffmpeg", "ffmpeg", "ffmpeg-7.1-essentials_build", "bin") + "/";
-                    OuiModOptions.Instance.Overworld.Goto<OuiVideoList>();
+                    ffmpegInstaller.InstallFFmpegAsynchronously(onComplete: () => {
+                        GotoVideoList(ffmpegInstaller.FFmpegDirectory);
+                    });
                 }
             }
         });
     }
 
+    private void GotoVideoList(string ffmpegDirectory) {
+        OuiModOptions.Instance.Overworld.Goto<OuiVideoList>().Configure(new FFmpegService(ffmpegDirectory, Crf), this);
+    }
+
     [SettingName("MODOPTIONS_VIDCUTTER_CUTFROMLASTSAVESTATE")]
     public ButtonBinding CutFromLastSaveState { get; set; }
+    
+    
 }
