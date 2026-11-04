@@ -2,35 +2,17 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Celeste.Mod.Vidcutter.Progress;
-using Celeste.Mod.Vidcutter.Utils;
+using Celeste.Mod.Vidcutter.Services.FFmpeg;
 using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
 namespace Celeste.Mod.Vidcutter.Tasks.FFmpegInstallation;
 
-public abstract class FFmpegInstallerBase(IProgress progress) {
+public abstract class FFmpegInstallerBase(FFmpegContext ffmpegContext, IProgress progress) {
     private const string BaseDownloadUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download";
     
-    private static string FFmpegBaseDirectory => Path.Combine(VidcutterWorkingDirectory, "ffmpeg");
-    private static string FFmpegBinDirectory => Path.Combine(FFmpegBaseDirectory, "bin");
-    
     protected abstract string DownloadFileName { get; }
-    public string FFmpegDirectory { get; private set; }
 
     private bool _isInstalling;
-
-    public bool IsFFmpegInstalled() {
-        if (CommandUtils.IsFFmpegInPath()) {
-            FFmpegDirectory = "";
-            return true;
-        }
-
-        if (Directory.Exists(FFmpegBinDirectory)) {
-            FFmpegDirectory = FFmpegBinDirectory;
-            return true;
-        }
-
-        return false;
-    }
 
     public void InstallFFmpegAsynchronously(Action onComplete = null) {
         if (_isInstalling)
@@ -39,7 +21,7 @@ public abstract class FFmpegInstallerBase(IProgress progress) {
         progress.Task = new Task(InstallFFmpegTask);
         progress.OnComplete += () => {
             _isInstalling = false;
-            FFmpegDirectory = FFmpegBinDirectory;
+            ffmpegContext.FFmpegDirectory = FFmpegBinDirectory;
             onComplete?.Invoke();
         };
         progress.Start();

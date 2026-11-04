@@ -4,6 +4,7 @@ using Celeste.Mod.Vidcutter.Exceptions;
 using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Progress;
 using Celeste.Mod.Vidcutter.Services;
+using Celeste.Mod.Vidcutter.Services.FFmpeg;
 using Celeste.Mod.Vidcutter.Utils;
 
 namespace Celeste.Mod.Vidcutter.Tasks;

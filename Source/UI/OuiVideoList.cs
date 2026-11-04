@@ -7,6 +7,7 @@ using Celeste.Mod.UI;
 using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Progress;
 using Celeste.Mod.Vidcutter.Services;
+using Celeste.Mod.Vidcutter.Services.FFmpeg;
 using Celeste.Mod.Vidcutter.Services.GameplayClips;
 using Celeste.Mod.Vidcutter.Services.Logs;
 using Celeste.Mod.Vidcutter.Tasks;

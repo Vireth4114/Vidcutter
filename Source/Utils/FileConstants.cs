@@ -4,6 +4,8 @@ namespace Celeste.Mod.Vidcutter.Utils;
 
 public static class FileConstants {
     public static readonly string VidcutterWorkingDirectory = Path.Combine(".", "VidCutter");
+    public static readonly string FFmpegBaseDirectory = Path.Combine(VidcutterWorkingDirectory, "ffmpeg");
+    public static readonly string FFmpegBinDirectory = Path.Combine(FFmpegBaseDirectory, "bin");
 
     public static string LogFile {
         get {
