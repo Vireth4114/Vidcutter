@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Celeste.Mod.Vidcutter.Services.FFmpeg;
 using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
 namespace Celeste.Mod.Vidcutter.Services;

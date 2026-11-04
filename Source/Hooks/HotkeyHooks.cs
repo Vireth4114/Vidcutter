@@ -1,7 +1,7 @@
 using Celeste.Mod.Vidcutter.Exceptions;
 using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Progress.Tooltips;
-using Celeste.Mod.Vidcutter.Services;
+using Celeste.Mod.Vidcutter.Services.FFmpeg;
 using Celeste.Mod.Vidcutter.Services.GameplayClips;
 using Celeste.Mod.Vidcutter.Tasks;
 using Celeste.Mod.Vidcutter.Tasks.FFmpegInstallation;
@@ -22,8 +22,12 @@ public class HotkeyHooks : IHook {
     }
 
     private static void CutClipFromLastSaveState() {
-        FFmpegInstallerBase ffmpegInstaller = FFmpegInstallerFactory.Create(TooltipWithProgress.Get());
-        if (!ffmpegInstaller.IsFFmpegInstalled()) {
+        FFmpegContext ffmpegContext = new(Settings.Crf);
+        if (!ffmpegContext.IsFFmpegInstalled) {
+            FFmpegInstallerBase ffmpegInstaller = FFmpegInstallerFactory.Create(
+                ffmpegContext,
+                TooltipWithProgress.Get()
+            );
             ffmpegInstaller.InstallFFmpegAsynchronously(onComplete: CutClipFromLastSaveState);
             return;
         }
@@ -35,7 +39,7 @@ public class HotkeyHooks : IHook {
             GameplayClipFactory clipFactory = new(Settings.GetClipDelays());
             GameplayClip clip = clipFactory.Create(State.LastState, State.LastEvent);
                 
-            FFmpegService ffmpegService = new(ffmpegInstaller.FFmpegDirectory, Settings.Crf);
+            FFmpegService ffmpegService = new(ffmpegContext);
 
             TooltipWithProgress progress = TooltipWithProgress.Get();
             CutClipFromLastVideo cutClipFromLastVideo = new(progress, ffmpegService, Settings.VideoFolder, clip);

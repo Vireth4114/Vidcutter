@@ -1,36 +1,18 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Celeste.Mod.Vidcutter.Progress;
-using Celeste.Mod.Vidcutter.Utils;
+using Celeste.Mod.Vidcutter.Services.FFmpeg;
 using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 
 namespace Celeste.Mod.Vidcutter.Tasks.FFmpegInstallation;
 
-public abstract class FFmpegInstallerBase(IProgress progress) {
-    private const string BaseDownloadUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download";
-    
-    private static string FFmpegBaseDirectory => Path.Combine(VidcutterWorkingDirectory, "ffmpeg");
-    private static string FFmpegBinDirectory => Path.Combine(FFmpegBaseDirectory, "bin");
-    
-    protected abstract string DownloadFileName { get; }
-    public string FFmpegDirectory { get; private set; }
+public abstract class FFmpegInstallerBase(FFmpegContext ffmpegContext, IProgress progress) {
+    protected abstract string DownloadUrl { get; }
+    private string DownloadFileName => DownloadUrl.Split('/').Last();
 
     private bool _isInstalling;
-
-    public bool IsFFmpegInstalled() {
-        if (CommandUtils.IsFFmpegInPath()) {
-            FFmpegDirectory = "";
-            return true;
-        }
-
-        if (Directory.Exists(FFmpegBinDirectory)) {
-            FFmpegDirectory = FFmpegBinDirectory;
-            return true;
-        }
-
-        return false;
-    }
 
     public void InstallFFmpegAsynchronously(Action onComplete = null) {
         if (_isInstalling)
@@ -39,7 +21,7 @@ public abstract class FFmpegInstallerBase(IProgress progress) {
         progress.Task = new Task(InstallFFmpegTask);
         progress.OnComplete += () => {
             _isInstalling = false;
-            FFmpegDirectory = FFmpegBinDirectory;
+            ffmpegContext.FFmpegDirectory = FFmpegBinDirectory;
             onComplete?.Invoke();
         };
         progress.Start();
@@ -47,14 +29,13 @@ public abstract class FFmpegInstallerBase(IProgress progress) {
 
     private void InstallFFmpegTask() {
         RemoveLegacyFFmpegIfItExists();
-        string downloadUrl = $"{BaseDownloadUrl}/{DownloadFileName}";
 
         string downloadPath = Path.Combine(VidcutterWorkingDirectory, DownloadFileName);
         string extractedPath = Path.Combine(VidcutterWorkingDirectory, DownloadFileName.Split(".")[0]);
 
         try {
-            Logger.Info("Vidcutter", $"Starting download of {downloadUrl}");
-            if (!DownloadFFmpegFromUrl(downloadUrl, downloadPath))
+            Logger.Info("Vidcutter", $"Starting download of {DownloadUrl}");
+            if (!DownloadFFmpegFromUrl(downloadPath))
                 return;
 
             progress.Message = Dialog.Clean("VIDCUTTER_EXTRACTINGFFMPEG");
@@ -69,8 +50,8 @@ public abstract class FFmpegInstallerBase(IProgress progress) {
         }
     }
 
-    private bool DownloadFFmpegFromUrl(string downloadUrl, string downloadFilePath) {
-        Everest.Updater.DownloadFileWithProgress(downloadUrl, downloadFilePath, HandleProgressFromEverestUpdater);
+    private bool DownloadFFmpegFromUrl(string downloadFilePath) {
+        Everest.Updater.DownloadFileWithProgress(DownloadUrl, downloadFilePath, HandleProgressFromEverestUpdater);
 
         if (File.Exists(downloadFilePath))
             return true;

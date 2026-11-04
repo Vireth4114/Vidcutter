@@ -2,18 +2,18 @@
 using System.Diagnostics;
 using Celeste.Mod.Vidcutter.Utils;
 
-namespace Celeste.Mod.Vidcutter.Services;
+namespace Celeste.Mod.Vidcutter.Services.FFmpeg;
 
-public class FFmpegService(string ffmpegDirectory, int crf) {
+public class FFmpegService(FFmpegContext context) {
     public void ConcatenateClipsFromIndexFilePath(string indexFilePath, string output) {
-        CommandUtils.ConcatenateClipFromFile(indexFilePath, output, ffmpegDirectory);
+        CommandUtils.ConcatenateClipFromFile(indexFilePath, output, context.FFmpegDirectory);
     }
     
     public void CutClip(string videoPath, TimeSpan startClip, TimeSpan endClip, string output, Action<float> updateProgress = null) {
         string ss = $@"{startClip:hh\:mm\:ss\.fff}";
         string to = $@"{endClip:hh\:mm\:ss\.fff}";
 
-        Process process = CommandUtils.GetCutClipProcess(ss, to, videoPath, output, ffmpegDirectory, crf);
+        Process process = CommandUtils.GetCutClipProcess(ss, to, videoPath, output, context.FFmpegDirectory, context.Crf);
 
         if (updateProgress != null) {
             process.OutputDataReceived += (_, e) => {
@@ -33,7 +33,7 @@ public class FFmpegService(string ffmpegDirectory, int crf) {
     }
 
     public string GetDurationFromFFprobe(string filePath) {
-        Process process = CommandUtils.GetDurationStringWithFFprobe(filePath, ffmpegDirectory);
+        Process process = CommandUtils.GetDurationStringWithFFprobe(filePath, context.FFmpegDirectory);
         string strDuration = process.StandardOutput.ReadToEnd();
         string strError = process.StandardError.ReadToEnd();
         if (strError.Length > 0) {
