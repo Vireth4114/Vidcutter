@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Celeste.Mod.Vidcutter.Progress;
 using Celeste.Mod.Vidcutter.Services.FFmpeg;
@@ -8,9 +9,8 @@ using static Celeste.Mod.Vidcutter.Utils.FileConstants;
 namespace Celeste.Mod.Vidcutter.Tasks.FFmpegInstallation;
 
 public abstract class FFmpegInstallerBase(FFmpegContext ffmpegContext, IProgress progress) {
-    private const string BaseDownloadUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download";
-    
-    protected abstract string DownloadFileName { get; }
+    protected abstract string DownloadUrl { get; }
+    private string DownloadFileName => DownloadUrl.Split('/').Last();
 
     private bool _isInstalling;
 
@@ -29,14 +29,13 @@ public abstract class FFmpegInstallerBase(FFmpegContext ffmpegContext, IProgress
 
     private void InstallFFmpegTask() {
         RemoveLegacyFFmpegIfItExists();
-        string downloadUrl = $"{BaseDownloadUrl}/{DownloadFileName}";
 
         string downloadPath = Path.Combine(VidcutterWorkingDirectory, DownloadFileName);
         string extractedPath = Path.Combine(VidcutterWorkingDirectory, DownloadFileName.Split(".")[0]);
 
         try {
-            Logger.Info("Vidcutter", $"Starting download of {downloadUrl}");
-            if (!DownloadFFmpegFromUrl(downloadUrl, downloadPath))
+            Logger.Info("Vidcutter", $"Starting download of {DownloadUrl}");
+            if (!DownloadFFmpegFromUrl(downloadPath))
                 return;
 
             progress.Message = Dialog.Clean("VIDCUTTER_EXTRACTINGFFMPEG");
@@ -51,8 +50,8 @@ public abstract class FFmpegInstallerBase(FFmpegContext ffmpegContext, IProgress
         }
     }
 
-    private bool DownloadFFmpegFromUrl(string downloadUrl, string downloadFilePath) {
-        Everest.Updater.DownloadFileWithProgress(downloadUrl, downloadFilePath, HandleProgressFromEverestUpdater);
+    private bool DownloadFFmpegFromUrl(string downloadFilePath) {
+        Everest.Updater.DownloadFileWithProgress(DownloadUrl, downloadFilePath, HandleProgressFromEverestUpdater);
 
         if (File.Exists(downloadFilePath))
             return true;
