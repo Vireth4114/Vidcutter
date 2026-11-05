@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+using System.Text.RegularExpressions;
 using Celeste.Mod.Vidcutter.Models;
 using Microsoft.Xna.Framework;
 using static Celeste.TextMenu;
@@ -11,6 +14,8 @@ public class LevelRow : Button {
     
     public LevelInAVideo Data { get; }
     public CustomEaseInSubHeader SubHeader { get; }
+
+    public override float Height() => ActiveFont.HeightOf(Label);
 
     public LevelRow(LevelInAVideo levelInAVideo) : base(GetLabel(levelInAVideo)) {
         Index = -1;
@@ -28,8 +33,16 @@ public class LevelRow : Button {
         } else {
             completion = Dialog.Clean("VIDCUTTER_LEVEL_UNTIL") + $" {lastLog.Room}";
         }
-        return $"{levelInAVideo.Level} ({completion})";
+        return WordWrap($"{levelInAVideo.Level} ({completion})");
     }
+
+    private static string WordWrap(string text) {
+        return string.Join(
+            Environment.NewLine,
+            Regex.Matches(text, @"(.{1,60})(\s+|$)").Select(m => m.Groups[1].Value)
+        );
+    }
+    
     public override void Render(Vector2 position, bool highlighted) {
         float alpha = Container.Alpha;
         Color color;
