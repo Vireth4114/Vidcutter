@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Celeste.Mod.Vidcutter.Models;
 using Celeste.Mod.Vidcutter.Services.Logs;
+using Celeste.Mod.Vidcutter.Utils;
 
 namespace Celeste.Mod.Vidcutter.Services;
 
@@ -46,6 +47,7 @@ public class VideoFileRepository(VideoDurationProvider videoDurationProvider) {
         DateTime firstLog = logs[0].Time;
         
         List<VideoFile> videos = allFiles
+            .Where(VideoUtils.IsPathAVideo)
             .Select(Path.GetFileName)
             .Select(v => Path.Combine(folder, Path.GetFileName(v)))
             .Select(Get)
