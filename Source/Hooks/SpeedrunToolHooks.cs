@@ -31,6 +31,7 @@ public class SpeedrunToolHooks : IHook {
         Vector2? playerPosition = level.Tracker.GetEntity<Player>()?.Position;
         if (playerPosition == level.Session.RespawnPoint) {
             HookManager.Log("STATE ON RESPAWN POINT", level.Session);
+            State.IsFromASavestate = false;
         } else {   
             HookManager.Log("STATE", level.Session);
             State.IsFromASavestate = true;
